@@ -12,10 +12,10 @@ export const territories: Territory[] = [
   { owner: 'Bruno', domination: 45, color: '#F39645', position: { left: '5%', top: '58%' }, rotation: '6deg' },
 ];
 export const activities: Activity[] = [
-  { label: 'Walking', detail: 'Explore', icon: 'walk-outline', color: colors.lime },
-  { label: 'Running', detail: 'Conquer', icon: 'speedometer-outline', color: colors.danger },
-  { label: 'Cycling', detail: 'Go farther', icon: 'bicycle-outline', color: colors.cyan },
-  { label: 'Indoor', detail: 'Train power', icon: 'barbell-outline', color: colors.violet },
+  { id: 'walking', label: 'Walking', detail: 'Explore', icon: 'walk-outline', color: colors.lime },
+  { id: 'running', label: 'Running', detail: 'Conquer', icon: 'speedometer-outline', color: colors.danger },
+  { id: 'cycling', label: 'Cycling', detail: 'Go farther', icon: 'bicycle-outline', color: colors.cyan },
+  { id: 'indoor', label: 'Indoor', detail: 'Train power', icon: 'barbell-outline', color: colors.violet },
 ];
 export const navigationItems: NavigationItem[] = [
   { label: 'Map', href: '/map', icon: 'map-outline', activeIcon: 'map' }, { label: 'Activities', href: '/activities', icon: 'pulse-outline', activeIcon: 'pulse' },

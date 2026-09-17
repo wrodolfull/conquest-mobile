@@ -12,10 +12,31 @@ export interface Territory {
 }
 
 export interface Activity {
+  id: ActivityType;
   label: string;
   detail: string;
   icon: IconName;
   color: string;
+}
+
+export type ActivityType = 'walking' | 'running' | 'cycling' | 'indoor';
+export type RewardRarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
+
+export interface DistanceMilestone {
+  distance: number;
+  rarity: RewardRarity;
+}
+
+export interface ActivityResult {
+  type: ActivityType;
+  durationSeconds: number;
+  xp: number;
+  energy: number;
+  distance?: number;
+  territoriesCrossed?: number;
+  influence?: number;
+  trainingPower?: number;
+  arenaPoints?: number;
 }
 
 export interface Resource { label: string; value: string; icon: IconName; color: string }
