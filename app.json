@@ -8,7 +8,15 @@
     "userInterfaceStyle": "dark",
     "plugins": ["expo-router"],
     "experiments": { "typedRoutes": true },
-    "ios": { "supportsTablet": true },
-    "android": { "adaptiveIcon": { "backgroundColor": "#07100E" } }
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Allow CONQUEST to use your location to place you in the game world and discover nearby territories."
+      }
+    },
+    "android": {
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "adaptiveIcon": { "backgroundColor": "#07100E" }
+    }
   }
 }
