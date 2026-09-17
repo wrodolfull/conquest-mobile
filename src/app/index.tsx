@@ -1,3 +1,5 @@
-import { HomeScreen } from '@/features/home/HomeScreen';
+import { Redirect } from 'expo-router';
 
-export default HomeScreen;
+export default function Index() {
+  return <Redirect href="/map" />;
+}
