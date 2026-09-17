@@ -8,6 +8,9 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#07100E' } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="activity/select" />
+        <Stack.Screen name="activity/active" />
+        <Stack.Screen name="activity/results" />
       </Stack>
     </>
   );
