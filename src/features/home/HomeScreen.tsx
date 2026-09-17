@@ -6,6 +6,7 @@ import { ArenaCard } from '@/components/ArenaCard';
 import { PlayerHeader } from '@/components/PlayerHeader';
 import { WeeklyProgress } from '@/components/WeeklyProgress';
 import { ConquestMap } from '@/features/map/ConquestMap';
+import { MapErrorBoundary } from '@/features/map/MapErrorBoundary';
 import { colors } from '@/theme';
 
 export function HomeScreen() {
@@ -13,7 +14,7 @@ export function HomeScreen() {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.mapStage}>
-          <ConquestMap />
+          <MapErrorBoundary><ConquestMap /></MapErrorBoundary>
           <LinearGradient
             colors={['#07100EF2', '#07100E99', 'transparent']}
             pointerEvents="none"
