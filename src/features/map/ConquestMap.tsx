@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
-import { territories } from '@/mocks/home';
+import { TerritoryOverlay } from '@/components/TerritoryOverlay';
+import { territories } from '@/mocks/game';
 import { colors } from '@/theme';
 import type { IconName } from '@/types/game';
 
@@ -16,7 +17,8 @@ export function ConquestMap() {
       <LinearGradient colors={['#17231F', '#0B1513']} style={StyleSheet.absoluteFill} />
       <View style={[styles.road, { width: '120%', top: '45%', left: '-10%', transform: [{ rotate: '-13deg' }] }]} />
       <View style={[styles.road, { width: '85%', top: '30%', left: '35%', transform: [{ rotate: '68deg' }] }]} />
-      {territories.map((territory) => <View key={territory.owner} style={[styles.zone, { backgroundColor: `${territory.color}24`, borderColor: `${territory.color}AA`, left: territory.position.left, top: territory.position.top, transform: [{ rotate: territory.rotation }] }]}><Text style={[styles.owner, { color: territory.color }]}>{territory.owner}</Text><Text style={styles.percent}>{territory.domination}%</Text></View>)}
+      <View style={[styles.block, styles.blockOne]} /><View style={[styles.block, styles.blockTwo]} />
+      {territories.map((territory) => <TerritoryOverlay key={territory.owner} territory={territory} />)}
       {pins.map((pin) => <View key={pin.icon} style={[styles.pin, { left: pin.left, top: pin.top, borderColor: pin.color }]}><Ionicons name={pin.icon} size={16} color={pin.color} /></View>)}
       <View style={styles.playerHalo}><View style={styles.player}><Ionicons name="navigate" size={14} color="#07100E" /></View></View>
       <View style={styles.live}><View style={styles.liveDot} /><Text style={styles.liveText}>LIVE TERRITORIES</Text></View>
@@ -25,10 +27,9 @@ export function ConquestMap() {
 }
 
 const styles = StyleSheet.create({
-  map: { height: 330, borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, position: 'relative' },
+  map: { height: 350, borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, position: 'relative' },
   road: { position: 'absolute', height: 3, backgroundColor: '#30423D', borderRadius: 4 },
-  zone: { position: 'absolute', width: '39%', height: '34%', borderWidth: 1.5, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
-  owner: { fontSize: 11, fontWeight: '900' }, percent: { color: colors.text, fontSize: 18, fontWeight: '900' },
+  block: { position: 'absolute', width: 90, height: 45, borderRadius: 8, backgroundColor: '#1B2C27', borderWidth: 1, borderColor: '#294039' }, blockOne: { left: '8%', top: '44%', transform: [{ rotate: '-12deg' }] }, blockTwo: { right: '7%', top: '24%', transform: [{ rotate: '8deg' }] },
   pin: { position: 'absolute', width: 34, height: 34, marginLeft: -17, marginTop: -17, borderRadius: 12, backgroundColor: '#101B18', borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
   playerHalo: { position: 'absolute', left: '47%', top: '45%', width: 44, height: 44, borderRadius: 22, backgroundColor: '#C8FF4A33', justifyContent: 'center', alignItems: 'center' },
   player: { width: 27, height: 27, borderRadius: 14, backgroundColor: colors.lime, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#F4FFD8' },

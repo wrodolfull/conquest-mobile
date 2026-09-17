@@ -26,4 +26,4 @@ npm run lint
 
 ## Scope
 
-This version contains the responsive mocked Home screen only. It does not include authentication, GPS tracking, maps, backend services, or multiplayer.
+This version contains a responsive, navigable mocked prototype with Map, Activities, Inventory, Battles, Ranking, and Profile tabs. It does not include authentication, real GPS tracking, map services, backend services, or multiplayer.

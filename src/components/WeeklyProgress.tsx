@@ -1,0 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, Text, View } from 'react-native';
+import { weeklyProgress } from '@/mocks/game';
+import { colors } from '@/theme';
+
+export function WeeklyProgress() {
+  return <LinearGradient colors={['#151F1C', '#101916']} style={styles.card}><View style={styles.top}><View><Text style={styles.label}>DISTANCE THIS WEEK</Text><Text style={styles.value}>{weeklyProgress.current} <Text style={styles.total}>/ {weeklyProgress.goal} km</Text></Text></View><View style={styles.rewardIcon}><Ionicons name="diamond" size={20} color={colors.violet} /></View></View><View style={styles.bar}><LinearGradient colors={[colors.lime, colors.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.fill, { width: `${weeklyProgress.percent}%` }]} /></View><View style={styles.rewardRow}><Ionicons name="gift-outline" size={14} color={colors.violet} /><Text style={styles.rewardText}>Next reward: <Text style={styles.rewardStrong}>{weeklyProgress.reward}</Text></Text><Text style={styles.remaining}>{weeklyProgress.remaining} km left</Text></View></LinearGradient>;
+}
+const styles = StyleSheet.create({ card: { padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.border }, top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, label: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 }, value: { color: colors.text, fontSize: 25, fontWeight: '900', marginTop: 3 }, total: { color: colors.muted, fontSize: 14 }, rewardIcon: { width: 42, height: 42, borderRadius: 15, backgroundColor: '#A977FF18', alignItems: 'center', justifyContent: 'center' }, bar: { height: 8, borderRadius: 5, backgroundColor: colors.border, overflow: 'hidden', marginVertical: 12 }, fill: { height: '100%', borderRadius: 5 }, rewardRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5 }, rewardText: { color: colors.muted, fontSize: 11 }, rewardStrong: { color: colors.violet, fontWeight: '800' }, remaining: { color: colors.muted, fontSize: 9, marginLeft: 'auto' } });
