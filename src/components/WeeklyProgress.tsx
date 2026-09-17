@@ -5,6 +5,34 @@ import { weeklyProgress } from '@/mocks/game';
 import { colors } from '@/theme';
 
 export function WeeklyProgress() {
-  return <LinearGradient colors={['#151F1C', '#101916']} style={styles.card}><View style={styles.top}><View><Text style={styles.label}>DISTANCE THIS WEEK</Text><Text style={styles.value}>{weeklyProgress.current} <Text style={styles.total}>/ {weeklyProgress.goal} km</Text></Text></View><View style={styles.rewardIcon}><Ionicons name="diamond" size={20} color={colors.violet} /></View></View><View style={styles.bar}><LinearGradient colors={[colors.lime, colors.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.fill, { width: `${weeklyProgress.percent}%` }]} /></View><View style={styles.rewardRow}><Ionicons name="gift-outline" size={14} color={colors.violet} /><Text style={styles.rewardText}>Next reward: <Text style={styles.rewardStrong}>{weeklyProgress.reward}</Text></Text><Text style={styles.remaining}>{weeklyProgress.remaining} km left</Text></View></LinearGradient>;
+  return (
+    <LinearGradient colors={['#13201D', '#0C1614']} style={styles.card}>
+      <View style={styles.medal}><Ionicons name="ribbon" size={25} color={colors.gold} /></View>
+      <View style={styles.progress}>
+        <View style={styles.progressHeader}>
+          <View><Text style={styles.label}>WEEKLY GOAL</Text><Text style={styles.value}>{weeklyProgress.current} <Text style={styles.total}>/ {weeklyProgress.goal} km</Text></Text></View>
+          <Text style={styles.remaining}>{weeklyProgress.daysLeft} DAYS LEFT</Text>
+        </View>
+        <View style={styles.bar}><LinearGradient colors={[colors.lime, colors.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.fill, { width: `${weeklyProgress.percent}%` }]} /></View>
+        <Text style={styles.rewardText}>Next reward  <Text style={styles.rewardStrong}>{weeklyProgress.reward}</Text></Text>
+      </View>
+      <View style={styles.rewardIcon}><Ionicons name="gift" size={22} color={colors.violet} /></View>
+    </LinearGradient>
+  );
 }
-const styles = StyleSheet.create({ card: { padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.border }, top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, label: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 }, value: { color: colors.text, fontSize: 25, fontWeight: '900', marginTop: 3 }, total: { color: colors.muted, fontSize: 14 }, rewardIcon: { width: 42, height: 42, borderRadius: 15, backgroundColor: '#A977FF18', alignItems: 'center', justifyContent: 'center' }, bar: { height: 8, borderRadius: 5, backgroundColor: colors.border, overflow: 'hidden', marginVertical: 12 }, fill: { height: '100%', borderRadius: 5 }, rewardRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5 }, rewardText: { color: colors.muted, fontSize: 11 }, rewardStrong: { color: colors.violet, fontWeight: '800' }, remaining: { color: colors.muted, fontSize: 9, marginLeft: 'auto' } });
+
+const styles = StyleSheet.create({
+  card: { minHeight: 94, paddingHorizontal: 13, paddingVertical: 12, borderRadius: 22, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  medal: { width: 40, height: 48, borderRadius: 14, backgroundColor: '#F8C14C12', alignItems: 'center', justifyContent: 'center' },
+  progress: { flex: 1 },
+  progressHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  label: { color: colors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  value: { color: colors.text, fontSize: 18, fontWeight: '900', marginTop: 1 },
+  total: { color: colors.muted, fontSize: 11 },
+  remaining: { color: colors.muted, fontSize: 7, fontWeight: '800', marginBottom: 3 },
+  bar: { height: 6, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden', marginTop: 7 },
+  fill: { height: '100%', borderRadius: 4 },
+  rewardText: { color: colors.muted, fontSize: 9, marginTop: 6 },
+  rewardStrong: { color: colors.violet, fontWeight: '900' },
+  rewardIcon: { width: 36, height: 44, borderLeftWidth: 1, borderLeftColor: colors.border, alignItems: 'flex-end', justifyContent: 'center' },
+});
