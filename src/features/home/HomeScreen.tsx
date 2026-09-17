@@ -50,7 +50,7 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: 16 },
-  mapStage: { height: 490, position: 'relative' },
+  mapStage: { height: 570, position: 'relative' },
   mapShade: { position: 'absolute', top: 0, left: 0, right: 0, height: 138 },
   header: { position: 'absolute', top: 0, left: 0, right: 0 },
   arena: { position: 'absolute', left: 0, right: 0, bottom: 14 },
