@@ -27,7 +27,7 @@ them in a stash first:
 git status
 git stash push --include-untracked -m "local changes before map update"
 git pull --ff-only origin main
-npm ci
+npm install
 npx expo start --clear
 ```
 
@@ -52,25 +52,6 @@ non-blocking explanation. Android location services must also be enabled.
 If Expo Go still shows an older bundle, close the project in Expo Go, stop the local
 Expo process, run `npx expo start --clear`, and scan the newly displayed QR code. Ensure
 the terminal is running in this repository rather than another copy of the project.
-
-### Repairing an inconsistent Expo installation on Windows
-
-An error such as `Cannot find module 'expo-router/internal/routing'` means packages
-from incompatible Expo/Router versions are mixed in `node_modules`. Stop Metro, update
-the repository, and perform a clean install from the committed lockfile in PowerShell:
-
-```powershell
-git pull --ff-only origin main
-Remove-Item -Recurse -Force node_modules
-npm cache verify
-npm ci
-npx expo install --check
-npx expo start --clear
-```
-
-Do not fix this error by installing `@expo/router-server` directly: it is internal Expo
-tooling and must be selected by the compatible Expo SDK. This project targets Expo SDK
-54, React Native 0.81, and Expo Router 6 as one compatible dependency set.
 
 ## Quality checks
 
