@@ -32,11 +32,11 @@ async function startNativeTracking(sessionId: string): Promise<boolean> {
   } catch { return false; }
 }
 
-export async function startOutdoorTracking(type: OutdoorActivityType): Promise<TrackingStartResult> {
+export async function startOutdoorTracking(type: OutdoorActivityType, ownerUserId: string): Promise<TrackingStartResult> {
   const existing = await activeActivityRepository.get();
   if (existing) return { ok: false, reason: 'unresolved-session' };
   const permissionFailure = await permissionsGranted(); if (permissionFailure) return permissionFailure;
-  const session = await activeActivityRepository.create(type);
+  const session = await activeActivityRepository.create(type, ownerUserId);
   if (await startNativeTracking(session.id)) { requestStartupFix(); return { ok: true, sessionId: session.id }; }
   await activeActivityRepository.remove(session.id);
   return { ok: false, reason: 'unavailable' };
