@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArenaCard } from '@/components/ArenaCard';
 import { PlayerHeader } from '@/components/PlayerHeader';
 import { WeeklyProgress } from '@/components/WeeklyProgress';
@@ -10,9 +11,23 @@ import { MapErrorBoundary } from '@/features/map/MapErrorBoundary';
 import { colors } from '@/theme';
 
 export function HomeScreen() {
+  const [hasSelectedTerritory, setHasSelectedTerritory] = useState(false);
+  const controlsEntrance = useRef(new Animated.Value(1)).current;
+
+  const handleTerritorySelectionChange = (isSelected: boolean) => {
+    setHasSelectedTerritory(isSelected);
+
+    if (!isSelected) {
+      controlsEntrance.setValue(0);
+      Animated.timing(controlsEntrance, { duration: 180, toValue: 1, useNativeDriver: true }).start();
+    }
+  };
+
   return (
     <View style={styles.screen}>
-      <MapErrorBoundary><ConquestMap /></MapErrorBoundary>
+      <MapErrorBoundary>
+        <ConquestMap onTerritorySelectionChange={handleTerritorySelectionChange} />
+      </MapErrorBoundary>
       <LinearGradient
         colors={['#07100ECC', '#07100E40', 'transparent']}
         pointerEvents="none"
@@ -24,7 +39,16 @@ export function HomeScreen() {
         <View style={styles.arena}><ArenaCard /></View>
       </View>
 
-      <View pointerEvents="box-none" style={styles.actionLayer}>
+      {!hasSelectedTerritory && <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.actionLayer,
+          {
+            opacity: controlsEntrance,
+            transform: [{ translateY: controlsEntrance.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+          },
+        ]}
+      >
         <Pressable
           accessibilityLabel="Start activity"
           accessibilityRole="button"
@@ -41,7 +65,7 @@ export function HomeScreen() {
           <Ionicons name="chevron-forward" size={19} color={colors.lime} />
         </Pressable>
         <WeeklyProgress />
-      </View>
+      </Animated.View>}
     </View>
   );
 }

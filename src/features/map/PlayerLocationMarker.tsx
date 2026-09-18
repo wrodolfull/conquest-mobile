@@ -21,11 +21,14 @@ export function PlayerLocationMarker({ latitude, longitude, accuracy }: PlayerLo
           radius={accuracy}
           strokeColor="#71F3ED88"
           strokeWidth={1}
+          zIndex={1}
         />
       ) : null}
-      <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={coordinate} tracksViewChanges={false}>
+      <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={coordinate} tracksViewChanges={false} zIndex={20}>
         <View style={styles.glow}>
-          <View style={styles.dot} />
+          <View style={styles.outerRing}>
+            <View style={styles.dot} />
+          </View>
         </View>
       </Marker>
     </>
@@ -34,10 +37,20 @@ export function PlayerLocationMarker({ latitude, longitude, accuracy }: PlayerLo
 
 const styles = StyleSheet.create({
   glow: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#37D8D135',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#37D8D13D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  outerRing: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#B9FFFC99',
+    backgroundColor: '#37D8D12B',
     alignItems: 'center',
     justifyContent: 'center',
   },

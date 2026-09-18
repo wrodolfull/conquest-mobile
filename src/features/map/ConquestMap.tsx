@@ -14,7 +14,11 @@ import { PlayerLocationMarker } from './PlayerLocationMarker';
 import { territoryVisual } from './mapVisuals';
 import { TerritoryCard } from './TerritoryCard';
 
-export function ConquestMap() {
+interface ConquestMapProps {
+  onTerritorySelectionChange?: (isSelected: boolean) => void;
+}
+
+export function ConquestMap({ onTerritorySelectionChange }: ConquestMapProps) {
   const mapRef = useRef<MapView>(null);
   const [coordinate, setCoordinate] = useState<LatLng>(FALLBACK_LOCATION);
   const [accuracy, setAccuracy] = useState<number | null>(null);
@@ -35,8 +39,19 @@ export function ConquestMap() {
 
   const territories = useMemo(() => generateTerritories(coordinate), [coordinate]);
   const arenas = useMemo(() => generateArenas(coordinate), [coordinate]);
-  const selectTerritory = (selected: MapTerritory) => { setArena(null); setTerritory(selected); };
-  const selectArena = (selected: MapArena) => { setTerritory(null); setArena(selected); };
+  const selectTerritory = (selected: MapTerritory) => {
+    setArena(null);
+    setTerritory(selected);
+    onTerritorySelectionChange?.(true);
+  };
+  const clearTerritory = () => {
+    setTerritory(null);
+    onTerritorySelectionChange?.(false);
+  };
+  const selectArena = (selected: MapArena) => {
+    clearTerritory();
+    setArena(selected);
+  };
   const centerOnPlayer = () => {
     mapRef.current?.animateCamera({ center: coordinate }, { duration: 450 });
   };
@@ -47,6 +62,10 @@ export function ConquestMap() {
       initialRegion={{ ...coordinate, latitudeDelta: 0.013, longitudeDelta: 0.013 }}
       key={`${coordinate.latitude}:${coordinate.longitude}`}
       mapType="standard"
+      onPress={() => {
+        if (territory) clearTerritory();
+        if (arena) setArena(null);
+      }}
       ref={mapRef}
       showsMyLocationButton={false}
       showsUserLocation={false}
@@ -65,7 +84,7 @@ export function ConquestMap() {
     <Pressable accessibilityLabel="Center map on player" accessibilityRole="button" onPress={centerOnPlayer} style={({ pressed }) => [styles.recenter, pressed && styles.controlPressed]}>
       <Ionicons name="locate" color={colors.cyan} size={21} />
     </Pressable>
-    {territory && <TerritoryCard territory={territory} onClose={() => setTerritory(null)} />}
+    {territory && <TerritoryCard territory={territory} onClose={clearTerritory} />}
     {arena && <ArenaDetailsCard arena={arena} onClose={() => setArena(null)} />}
   </View>;
 }
