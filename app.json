@@ -19,18 +19,47 @@
         }
       ]
     ],
-    "experiments": { "typedRoutes": true },
+    "experiments": {
+      "typedRoutes": true
+    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Allow CONQUEST to use precise location to map your outdoor fitness route, territories and nearby game locations.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow CONQUEST to record an active outdoor workout when the app is in the background or your screen is locked.",
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_LOCATION"],
-      "adaptiveIcon": { "backgroundColor": "#07100E" }
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDuHcmZVy83kwaiMz5naoksJq6bNum3JWc"
+       }
+      },
+      "adaptiveIcon": {
+        "backgroundColor": "#07100E"
+      },
+      "package": "com.wrodolfull.conquest"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cf044725-f8d6-4349-9ac0-e84fa882c8ec"
+      }
     }
   }
 }
