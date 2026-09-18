@@ -8,16 +8,17 @@ import { PlayerHeader } from '@/components/PlayerHeader';
 import { WeeklyProgress } from '@/components/WeeklyProgress';
 import { ConquestMap } from '@/features/map/ConquestMap';
 import { MapErrorBoundary } from '@/features/map/MapErrorBoundary';
+import type { MapTerritory } from '@/features/territories/types';
 import { colors } from '@/theme';
 
 export function HomeScreen() {
-  const [hasSelectedTerritory, setHasSelectedTerritory] = useState(false);
+  const [selectedTerritory, setSelectedTerritory] = useState<MapTerritory | null>(null);
   const controlsEntrance = useRef(new Animated.Value(1)).current;
 
-  const handleTerritorySelectionChange = (isSelected: boolean) => {
-    setHasSelectedTerritory(isSelected);
+  const handleTerritorySelectionChange = (territory: MapTerritory | null) => {
+    setSelectedTerritory(territory);
 
-    if (!isSelected) {
+    if (territory === null) {
       controlsEntrance.setValue(0);
       Animated.timing(controlsEntrance, { duration: 180, toValue: 1, useNativeDriver: true }).start();
     }
@@ -26,7 +27,10 @@ export function HomeScreen() {
   return (
     <View style={styles.screen}>
       <MapErrorBoundary>
-        <ConquestMap onTerritorySelectionChange={handleTerritorySelectionChange} />
+        <ConquestMap
+          onTerritorySelectionChange={handleTerritorySelectionChange}
+          selectedTerritory={selectedTerritory}
+        />
       </MapErrorBoundary>
       <LinearGradient
         colors={['#07100ECC', '#07100E40', 'transparent']}
@@ -39,33 +43,35 @@ export function HomeScreen() {
         <View style={styles.arena}><ArenaCard /></View>
       </View>
 
-      {!hasSelectedTerritory && <Animated.View
-        pointerEvents="box-none"
-        style={[
-          styles.actionLayer,
-          {
-            opacity: controlsEntrance,
-            transform: [{ translateY: controlsEntrance.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
-          },
-        ]}
-      >
-        <Pressable
-          accessibilityLabel="Start activity"
-          accessibilityRole="button"
-          onPress={() => router.push('/activity/select')}
-          style={({ pressed }) => [styles.start, pressed && styles.pressed]}
+      {selectedTerritory === null ? (
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            styles.actionLayer,
+            {
+              opacity: controlsEntrance,
+              transform: [{ translateY: controlsEntrance.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+            },
+          ]}
         >
-          <LinearGradient colors={['#D8FF73', colors.lime]} style={styles.startIcon}>
-            <Ionicons name="play" size={21} color={colors.background} style={styles.playIcon} />
-          </LinearGradient>
-          <View style={styles.startCopy}>
-            <Text style={styles.startTitle}>Start activity</Text>
-            <Text style={styles.startDetail}>Walk  •  Run  •  Cycle  •  Indoor</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={19} color={colors.lime} />
-        </Pressable>
-        <WeeklyProgress />
-      </Animated.View>}
+          <Pressable
+            accessibilityLabel="Start activity"
+            accessibilityRole="button"
+            onPress={() => router.push('/activity/select')}
+            style={({ pressed }) => [styles.start, pressed && styles.pressed]}
+          >
+            <LinearGradient colors={['#D8FF73', colors.lime]} style={styles.startIcon}>
+              <Ionicons name="play" size={21} color={colors.background} style={styles.playIcon} />
+            </LinearGradient>
+            <View style={styles.startCopy}>
+              <Text style={styles.startTitle}>Start activity</Text>
+              <Text style={styles.startDetail}>Walk  •  Run  •  Cycle  •  Indoor</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={19} color={colors.lime} />
+          </Pressable>
+          <WeeklyProgress />
+        </Animated.View>
+      ) : null}
     </View>
   );
 }

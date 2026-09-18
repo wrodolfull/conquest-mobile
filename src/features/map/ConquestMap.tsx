@@ -1,8 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-// Installed by Expo in normal development; the execution sandbox may not cache native packages.
-// eslint-disable-next-line import/no-unresolved
 import MapView, { Marker, Polygon, type LatLng } from 'react-native-maps';
 import { generateArenas, generateTerritories } from '@/features/territories/territoryGenerator';
 import type { MapArena, MapTerritory } from '@/features/territories/types';
@@ -15,17 +13,17 @@ import { territoryVisual } from './mapVisuals';
 import { TerritoryCard } from './TerritoryCard';
 
 interface ConquestMapProps {
-  onTerritorySelectionChange?: (isSelected: boolean) => void;
+  selectedTerritory: MapTerritory | null;
+  onTerritorySelectionChange: (territory: MapTerritory | null) => void;
 }
 
-export function ConquestMap({ onTerritorySelectionChange }: ConquestMapProps) {
+export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: ConquestMapProps) {
   const mapRef = useRef<MapView>(null);
   const [coordinate, setCoordinate] = useState<LatLng>(FALLBACK_LOCATION);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [territory, setTerritory] = useState<MapTerritory | null>(null);
   const [arena, setArena] = useState<MapArena | null>(null);
 
   useEffect(() => { void getPlayerLocation().then((result) => {
@@ -41,12 +39,10 @@ export function ConquestMap({ onTerritorySelectionChange }: ConquestMapProps) {
   const arenas = useMemo(() => generateArenas(coordinate), [coordinate]);
   const selectTerritory = (selected: MapTerritory) => {
     setArena(null);
-    setTerritory(selected);
-    onTerritorySelectionChange?.(true);
+    onTerritorySelectionChange(selected);
   };
   const clearTerritory = () => {
-    setTerritory(null);
-    onTerritorySelectionChange?.(false);
+    onTerritorySelectionChange(null);
   };
   const selectArena = (selected: MapArena) => {
     clearTerritory();
@@ -63,7 +59,7 @@ export function ConquestMap({ onTerritorySelectionChange }: ConquestMapProps) {
       key={`${coordinate.latitude}:${coordinate.longitude}`}
       mapType="standard"
       onPress={() => {
-        if (territory) clearTerritory();
+        if (selectedTerritory) clearTerritory();
         if (arena) setArena(null);
       }}
       ref={mapRef}
@@ -84,7 +80,7 @@ export function ConquestMap({ onTerritorySelectionChange }: ConquestMapProps) {
     <Pressable accessibilityLabel="Center map on player" accessibilityRole="button" onPress={centerOnPlayer} style={({ pressed }) => [styles.recenter, pressed && styles.controlPressed]}>
       <Ionicons name="locate" color={colors.cyan} size={21} />
     </Pressable>
-    {territory && <TerritoryCard territory={territory} onClose={clearTerritory} />}
+    {selectedTerritory && <TerritoryCard territory={selectedTerritory} onClose={clearTerritory} />}
     {arena && <ArenaDetailsCard arena={arena} onClose={() => setArena(null)} />}
   </View>;
 }
