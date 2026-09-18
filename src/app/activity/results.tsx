@@ -8,6 +8,7 @@ import { formatDuration, isActivityType } from '@/features/activity/activityRule
 import { activityRepository } from '@/services/storage/activityRepository';
 import { colors } from '@/theme';
 import type { CompletedIndoorActivity } from '@/features/activity/indoorRules';
+import { splitRouteAtGaps } from '@/features/activity/tracking';
 
 export default function ActivityResultsScreen() {
   const params = useLocalSearchParams<{ type?: string; activityId?: string }>();
@@ -31,6 +32,7 @@ function RouteMap({ route }: { route: CompletedOutdoorActivity['route'] }) {
   const mapRef = useRef<MapView>(null);
   const start = route[0]!;
   const finish = route.at(-1)!;
+  const segments = splitRouteAtGaps(route);
   const fitRoute = useCallback(() => {
     if (route.length > 1) {
       mapRef.current?.fitToCoordinates(route, {
@@ -47,7 +49,7 @@ function RouteMap({ route }: { route: CompletedOutdoorActivity['route'] }) {
     style={StyleSheet.absoluteFill}
     toolbarEnabled={false}
   >
-    <Polyline coordinates={route} strokeColor={colors.cyan} strokeWidth={5} />
+    {segments.filter((segment) => segment.length > 1).map((segment) => <Polyline coordinates={segment} key={`${segment[0]!.timestamp}-${segment.at(-1)!.timestamp}`} strokeColor={colors.cyan} strokeWidth={5} />)}
     <Marker coordinate={start} pinColor={colors.lime} title="Start" />
     <Marker coordinate={finish} pinColor={colors.cyan} title="Finish" />
   </MapView>;

@@ -7,7 +7,19 @@ import { activeActivityRepository } from '@/services/storage/activeActivityRepos
 import { CONQUEST_OUTDOOR_LOCATION_TASK } from '@/services/location/backgroundLocationTask';
 
 export default function RootLayout() {
-  useEffect(() => { void (async () => { const session = await activeActivityRepository.get(); if (session?.status === 'active' && !(await Location.hasStartedLocationUpdatesAsync(CONQUEST_OUTDOOR_LOCATION_TASK))) await activeActivityRepository.markInterrupted(session.id); })(); }, []);
+  useEffect(() => { void (async () => {
+    const session = await activeActivityRepository.get();
+    if (session?.status !== 'active') return;
+    try {
+      const registered = await Location.hasStartedLocationUpdatesAsync(CONQUEST_OUTDOOR_LOCATION_TASK);
+      // A force-stopped process can retain a task registration while delivering
+      // no locations. A stale durable heartbeat catches that case on relaunch.
+      const stale = Date.now() - session.updatedAt > 2 * 60_000;
+      if (!registered || stale) await activeActivityRepository.markInterrupted(session.id);
+    } catch {
+      await activeActivityRepository.markInterrupted(session.id);
+    }
+  })(); }, []);
   return (
     <PoiProvider>
       <StatusBar style="light" />

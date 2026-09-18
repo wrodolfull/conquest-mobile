@@ -7,6 +7,7 @@ declare module 'expo-location' {
   export interface LocationSubscription { remove(): void }
   export interface PermissionResponse { granted: boolean; canAskAgain: boolean }
   export function requestForegroundPermissionsAsync(): Promise<PermissionResponse>;
+  export function getForegroundPermissionsAsync(): Promise<PermissionResponse>;
   export function requestBackgroundPermissionsAsync(): Promise<PermissionResponse>;
   export function hasServicesEnabledAsync(): Promise<boolean>;
   export function getCurrentPositionAsync(options?: { accuracy?: Accuracy }): Promise<LocationObject>;

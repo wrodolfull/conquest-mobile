@@ -53,7 +53,11 @@ export const activityPointRepository = {
 
 export const activeActivityRepository = {
   async create(type: OutdoorActivityType, startedAt = Date.now()): Promise<ActiveActivitySession> { const db = await database(); const id = `${startedAt}-${type}`; await db.runAsync("INSERT OR REPLACE INTO active_activity_sessions (id, type, started_at, updated_at, status, phase, distance_meters) VALUES (?, ?, ?, ?, 'active', 'acquiring', 0)", id, type, startedAt, startedAt); return { id, type, startedAt, updatedAt: startedAt, status: 'active', phase: 'acquiring', distanceMeters: 0 }; },
-  async get(): Promise<ActiveActivitySession | undefined> { const db = await database(); const row = await db.getFirstAsync<SessionRow>('SELECT * FROM active_activity_sessions ORDER BY started_at DESC LIMIT 1'); if (!row) return undefined; const accepted = (await activityPointRepository.list(row.id)).filter((point) => point.accepted); return { id: row.id, type: row.type, startedAt: row.started_at, updatedAt: row.updated_at, status: row.status, phase: row.phase, distanceMeters: row.distance_meters, lastAcceptedPoint: accepted.at(-1) }; },
+  async get(): Promise<ActiveActivitySession | undefined> {
+    const db = await database(); const row = await db.getFirstAsync<SessionRow>('SELECT * FROM active_activity_sessions ORDER BY started_at DESC LIMIT 1'); if (!row) return undefined;
+    const last = await db.getFirstAsync<PointRow>('SELECT id, latitude, longitude, timestamp, accuracy, altitude, speed, heading, break_before, accepted, provisional, reason FROM activity_points WHERE session_id = ? AND accepted = 1 ORDER BY timestamp DESC, id DESC LIMIT 1', row.id);
+    return { id: row.id, type: row.type, startedAt: row.started_at, updatedAt: row.updated_at, status: row.status, phase: row.phase, distanceMeters: row.distance_meters, lastAcceptedPoint: last ? pointFromRow(last) : undefined };
+  },
   async update(session: Pick<ActiveActivitySession, 'id' | 'phase' | 'distanceMeters'>) { const db = await database(); await db.runAsync('UPDATE active_activity_sessions SET updated_at = ?, phase = ?, distance_meters = ? WHERE id = ?', Date.now(), session.phase, session.distanceMeters, session.id); },
   async markInterrupted(id: string) { const db = await database(); await db.runAsync("UPDATE active_activity_sessions SET status = 'interrupted' WHERE id = ?", id); },
   async markActive(id: string) { const db = await database(); await db.runAsync("UPDATE active_activity_sessions SET status = 'active', updated_at = ? WHERE id = ?", Date.now(), id); },

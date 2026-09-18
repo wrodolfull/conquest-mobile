@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createTrackingState, processPoint, routeDistanceMeters } = require('../.test-dist/features/activity/tracking.js');
+const { createTrackingState, processPoint, routeDistanceMeters, splitRouteAtGaps } = require('../.test-dist/features/activity/tracking.js');
 const { calculateTraversals, rewardsForDistance } = require('../.test-dist/features/activity/outdoorRules.js');
 
 const origin = { latitude: -22.9698, longitude: -46.9974 };
@@ -54,6 +54,7 @@ test('long GPS gap creates a route break without straight-line distance', () => 
   const before = stabilized(); const after = processPoint(before, point(500, 35_001)).state;
   assert.equal(after.accepted.at(-1).breakBefore, true);
   assert.equal(routeDistanceMeters(after.accepted), 0);
+  assert.equal(splitRouteAtGaps(after.accepted).length, 2);
   assert.equal(calculateTraversals(after.accepted).reduce((sum, item) => sum + item.distanceMeters, 0), 0);
 });
 

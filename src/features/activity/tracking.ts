@@ -62,6 +62,14 @@ export function routeDistanceMeters(points: readonly ActivityPoint[]): number {
   return points.slice(1).reduce((total, point, index) => total + (point.breakBefore ? 0 : segmentDistanceMeters(points[index]!, point)), 0);
 }
 
+export function splitRouteAtGaps(points: readonly ActivityPoint[]): ActivityPoint[][] {
+  return points.reduce<ActivityPoint[][]>((segments, point) => {
+    if (!segments.length || point.breakBefore) segments.push([point]);
+    else segments.at(-1)!.push(point);
+    return segments;
+  }, []);
+}
+
 const validCoordinate = (point: ActivityPoint) => Number.isFinite(point.latitude) && Number.isFinite(point.longitude) && Math.abs(point.latitude) <= 90 && Math.abs(point.longitude) <= 180;
 const accuracyOf = (point: ActivityPoint) => point.accuracy ?? GPS_FILTER.maximumAccuracyMeters;
 
