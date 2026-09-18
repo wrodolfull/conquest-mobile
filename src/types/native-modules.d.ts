@@ -1,6 +1,6 @@
 declare module 'expo-location' {
   export enum Accuracy { Balanced = 3 }
-  export interface LocationObject { coords: { latitude: number; longitude: number } }
+  export interface LocationObject { coords: { latitude: number; longitude: number; accuracy: number | null } }
   export interface PermissionResponse { granted: boolean; canAskAgain: boolean }
   export function requestForegroundPermissionsAsync(): Promise<PermissionResponse>;
   export function getCurrentPositionAsync(options?: { accuracy?: Accuracy }): Promise<LocationObject>;
@@ -12,12 +12,16 @@ declare module 'react-native-maps' {
   import type { StyleProp, ViewStyle } from 'react-native';
   export interface LatLng { latitude: number; longitude: number }
   export interface Region extends LatLng { latitudeDelta: number; longitudeDelta: number }
+  interface Camera { center?: LatLng; zoom?: number; pitch?: number; heading?: number; altitude?: number }
   interface MapProps { children?: ReactNode; initialRegion?: Region; mapType?: string; showsUserLocation?: boolean; showsMyLocationButton?: boolean; toolbarEnabled?: boolean; style?: StyleProp<ViewStyle>; customMapStyle?: object[] }
   interface MarkerProps { children?: ReactNode; coordinate: LatLng; anchor?: { x: number; y: number }; onPress?: () => void; tracksViewChanges?: boolean }
   interface PolygonProps { coordinates: LatLng[]; fillColor?: string; strokeColor?: string; strokeWidth?: number; tappable?: boolean; onPress?: () => void }
+  interface CircleProps { center: LatLng; radius: number; fillColor?: string; strokeColor?: string; strokeWidth?: number }
   export default class MapView extends Component<MapProps> {
     animateToRegion(region: Region, duration?: number): void;
+    animateCamera(camera: Camera, options?: { duration?: number }): void;
   }
   export const Marker: ComponentType<MarkerProps>;
   export const Polygon: ComponentType<PolygonProps>;
+  export const Circle: ComponentType<CircleProps>;
 }

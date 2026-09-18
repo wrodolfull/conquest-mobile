@@ -14,6 +14,6 @@ export function ResourceCounter({ resource, compact = false }: { resource: Resou
 
 const styles = StyleSheet.create({
   counter: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border },
-  compact: { minHeight: 30, paddingHorizontal: 8 },
+  compact: { minHeight: 28, paddingHorizontal: 7, backgroundColor: '#172521CC' },
   value: { color: colors.text, fontSize: 11, fontWeight: '900' },
 });

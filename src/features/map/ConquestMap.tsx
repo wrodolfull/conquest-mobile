@@ -10,12 +10,14 @@ import { FALLBACK_LOCATION, getPlayerLocation } from '@/services/location/locati
 import { colors } from '@/theme';
 import { ArenaDetailsCard } from './ArenaDetailsCard';
 import { conquestMapStyle } from './mapStyle';
+import { PlayerLocationMarker } from './PlayerLocationMarker';
 import { territoryVisual } from './mapVisuals';
 import { TerritoryCard } from './TerritoryCard';
 
 export function ConquestMap() {
   const mapRef = useRef<MapView>(null);
   const [coordinate, setCoordinate] = useState<LatLng>(FALLBACK_LOCATION);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -24,6 +26,7 @@ export function ConquestMap() {
 
   useEffect(() => { void getPlayerLocation().then((result) => {
     setCoordinate(result.coordinate);
+    setAccuracy(result.accuracy);
     setUsingFallback(result.isFallback);
     if (result.permissionDenied) setMessage('Enable location to play with real territories around you. Showing a mock area for now.');
     else if (result.isFallback) setMessage('Location is temporarily unavailable. Showing a mock area for now.');
@@ -35,11 +38,7 @@ export function ConquestMap() {
   const selectTerritory = (selected: MapTerritory) => { setArena(null); setTerritory(selected); };
   const selectArena = (selected: MapArena) => { setTerritory(null); setArena(selected); };
   const centerOnPlayer = () => {
-    mapRef.current?.animateToRegion({
-      ...coordinate,
-      latitudeDelta: 0.013,
-      longitudeDelta: 0.013,
-    }, 450);
+    mapRef.current?.animateCamera({ center: coordinate }, { duration: 450 });
   };
 
   return <View style={styles.container}>
@@ -58,9 +57,7 @@ export function ConquestMap() {
       {arenas.map((item) => <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={item.coordinate} key={item.id} onPress={() => selectArena(item)} tracksViewChanges={false}>
         <View style={styles.arenaMarker}><Ionicons name="barbell" color="#F1E9FF" size={19} /></View>
       </Marker>)}
-      <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={coordinate} tracksViewChanges={false}>
-        <View style={styles.playerHalo}><View style={styles.player}><Ionicons name="navigate" size={15} color={colors.background} /></View></View>
-      </Marker>
+      <PlayerLocationMarker latitude={coordinate.latitude} longitude={coordinate.longitude} accuracy={accuracy} />
     </MapView>
     {loading && <View style={styles.loading}><ActivityIndicator color={colors.lime} /><Text style={styles.loadingText}>LOCATING PLAYER…</Text></View>}
     {message && <Pressable accessibilityRole="button" onPress={() => setMessage(null)} style={styles.notice}><Ionicons name="location-outline" color={colors.gold} size={16} /><Text style={styles.noticeText}>{message}</Text><Ionicons name="close" color={colors.muted} size={15} /></Pressable>}
@@ -75,7 +72,6 @@ export function ConquestMap() {
 
 const styles = StyleSheet.create({
   container: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', backgroundColor: '#0A1714' },
-  playerHalo: { width: 62, height: 62, borderRadius: 31, backgroundColor: '#37D8D130', borderWidth: 2, borderColor: '#37D8D188', justifyContent: 'center', alignItems: 'center' }, player: { width: 31, height: 31, borderRadius: 16, backgroundColor: colors.cyan, borderWidth: 3, borderColor: '#E7FFFF', justifyContent: 'center', alignItems: 'center', shadowColor: colors.cyan, shadowOpacity: 0.9, shadowRadius: 10, elevation: 10 },
   arenaMarker: { width: 43, height: 43, borderRadius: 14, backgroundColor: '#5E35A9E8', borderWidth: 2, borderColor: '#CDB4FF', justifyContent: 'center', alignItems: 'center', transform: [{ rotate: '45deg' }], elevation: 9 },
   loading: { position: 'absolute', top: '42%', alignSelf: 'center', borderRadius: 14, backgroundColor: '#07100EEB', paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }, loadingText: { color: colors.text, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   notice: { position: 'absolute', top: 106, left: 12, right: 12, minHeight: 42, borderRadius: 13, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: '#181B14F2', borderWidth: 1, borderColor: '#6A6033', flexDirection: 'row', alignItems: 'center', gap: 8 }, noticeText: { color: '#E7E7DB', fontSize: 10, lineHeight: 14, flex: 1 },
