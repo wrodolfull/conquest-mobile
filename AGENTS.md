@@ -39,7 +39,7 @@ Workout -> Training Power -> Loot -> Arena -> Battle resources
 - TypeScript
 - Expo Router
 
-Future:
+Backend:
 - Supabase
 - PostgreSQL
 - PostGIS
@@ -59,6 +59,9 @@ Future:
 
 ## Current phase
 
-Visual mocked prototype.
+Real GPS mobile prototype transitioning to a secure persistent backend.
 
-Do not add backend infrastructure unless explicitly requested.
+Supabase backend infrastructure is intentionally part of the project. Persistent
+game economy changes must be server-authoritative. Keep GPS and business rules
+separate from UI components, and never make network availability a requirement
+for recording a workout.

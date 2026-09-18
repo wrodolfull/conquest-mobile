@@ -11,4 +11,8 @@ web-build/
 expo-env.d.ts
 # @end expo-cli
 .test-dist/
+.env
 .env.local
+.env.*.local
+
+.test-dist-edge/

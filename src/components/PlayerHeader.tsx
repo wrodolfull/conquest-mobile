@@ -2,26 +2,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { IconButton } from '@/components/IconButton';
 import { ResourceCounter } from '@/components/ResourceCounter';
-import { player } from '@/mocks/game';
+import { useAuth } from '@/features/auth/AuthContext';
 import { colors } from '@/theme';
 
 export function PlayerHeader() {
+  const { profile, progress } = useAuth();
+  const name = profile?.display_name || profile?.username || 'Player'; const level = progress?.level; const initial = name.slice(0, 1).toUpperCase(); const xpPercent = progress ? Math.min(100, progress.xp % 1000 / 10) : 0; const resources = [{ label: 'Energy', value: progress ? String(progress.energy) : '—', icon: 'flash' as const, color: colors.gold }, { label: 'Coins', value: progress ? String(progress.coins) : '—', icon: 'diamond' as const, color: colors.cyan }];
   const { width } = useWindowDimensions();
   const compact = width < 380;
   return (
     <View style={styles.header}>
       <View style={styles.topRow}>
       <View style={styles.identity}>
-        <View style={styles.avatar}><Text style={styles.avatarText}>{player.initial}</Text><View style={styles.level}><Text style={styles.levelText}>{player.level}</Text></View></View>
+        <View style={styles.avatar}><Text style={styles.avatarText}>{initial}</Text><View style={styles.level}><Text style={styles.levelText}>{level ?? '—'}</Text></View></View>
         <View style={styles.player}>
-          <Text numberOfLines={1} style={styles.name}>{player.name}</Text>
-          <Text style={styles.welcome}>LEVEL {player.level}</Text>
-          <View style={styles.xpTrack}><LinearGradient colors={[colors.lime, colors.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.xpFill, { width: `${player.xpPercent}%` }]} /></View>
+          <Text numberOfLines={1} style={styles.name}>{name}</Text>
+          <Text style={styles.welcome}>LEVEL {level ?? '—'}</Text>
+          <View style={styles.xpTrack}><LinearGradient colors={[colors.lime, colors.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.xpFill, { width: `${xpPercent}%` }]} /></View>
         </View>
       </View>
       <IconButton icon="notifications-outline" label="Notifications" badge />
       </View>
-      <View style={styles.actions}>{player.resources.map((resource) => <ResourceCounter compact={compact} key={resource.label} resource={resource} />)}</View>
+      <View style={styles.actions}>{resources.map((resource) => <ResourceCounter compact={compact} key={resource.label} resource={resource} />)}</View>
     </View>
   );
 }

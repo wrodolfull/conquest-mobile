@@ -8,6 +8,9 @@ import { FALLBACK_LOCATION } from '@/services/location/locationService';
 import { usePois } from '@/features/poi/PoiContext';
 import { colors } from '@/theme';
 import { activityRepository } from '@/services/storage/activityRepository';
+import { territoryRepository, type TerritorySnapshot } from '@/services/backend/territoryRepository';
+import { geometryRings } from '@/features/territories/geometry';
+import { useAuth } from '@/features/auth/AuthContext';
 import { PoiIntelCard } from './PoiIntelCard';
 import { conquestMapStyle } from './mapStyle';
 import { PlayerLocationMarker } from './PlayerLocationMarker';
@@ -20,6 +23,7 @@ interface ConquestMapProps {
 }
 
 export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: ConquestMapProps) {
+  const { user } = useAuth();
   const mapRef = useRef<MapView>(null);
   const { location, locationReady, locationDenied, presences } = usePois();
   const coordinate: LatLng = location ?? FALLBACK_LOCATION;
@@ -29,6 +33,7 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
   const [message, setMessage] = useState<string | null>(null);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
   const [influenceRevision, setInfluenceRevision] = useState(0);
+  const [snapshot, setSnapshot] = useState<Map<string, TerritorySnapshot>>(new Map());
   const initiallyCentered = useRef(false);
 
   useEffect(() => activityRepository.subscribe(() => setInfluenceRevision((revision) => revision + 1)), []);
@@ -40,15 +45,14 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
     mapRef.current?.animateToRegion({ ...location, latitudeDelta: 0.013, longitudeDelta: 0.013 }, 350);
   }, [location, locationReady]);
 
+  const localTerritories = useMemo(() => generateTerritories(coordinate), [coordinate]);
+  useEffect(() => { if (!user) return; let active = true; void territoryRepository.getSnapshot(localTerritories.map(({ id }) => id)).then((rows) => { if (active) setSnapshot(new Map(rows.map((row) => [row.territory_id, row]))); }); return () => { active = false; }; }, [localTerritories, user]);
   const territories = useMemo(() => {
     // The revision makes repository writes visible without coupling map generation
     // to a particular persistence implementation.
     void influenceRevision;
-    return generateTerritories(coordinate).map((territory) => ({
-      ...territory,
-      playerInfluence: territory.playerInfluence + activityRepository.influenceFor(territory.id),
-    }));
-  }, [coordinate, influenceRevision]);
+    return localTerritories.map((territory) => { const remote = snapshot.get(territory.id); const ring = remote ? geometryRings(remote.geometry)[0] : undefined; return { ...territory, name: remote?.name ?? territory.name, ownerId: remote?.owner_user_id ?? territory.ownerId, playerInfluence: remote?.my_influence ?? activityRepository.influenceFor(territory.id), boundary: ring?.length ? ring : territory.boundary }; });
+  }, [localTerritories, influenceRevision, snapshot]);
   const selectTerritory = (selected: MapTerritory) => {
     setSelectedPoiId(null);
     onTerritorySelectionChange(selected);

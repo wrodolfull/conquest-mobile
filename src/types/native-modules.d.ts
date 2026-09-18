@@ -55,3 +55,7 @@ declare module 'react-native-maps' {
   export const Circle: ComponentType<CircleProps>;
   export const Polyline: ComponentType<PolylineProps>;
 }
+declare module '@react-native-async-storage/async-storage' { const storage: { getItem(key:string):Promise<string|null>; setItem(key:string,value:string):Promise<void>; removeItem(key:string):Promise<void> }; export default storage; }
+declare module '@supabase/supabase-js' { export function createClient(url:string,key:string,options?:unknown): any; }
+declare module 'expo-web-browser' { export function maybeCompleteAuthSession():void; export function openAuthSessionAsync(url:string,redirectUrl:string):Promise<{type:string;url:string}>; }
+declare module 'react-native-url-polyfill/auto';

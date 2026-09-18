@@ -1,6 +1,7 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
-import { tabScreenData } from '@/mocks/game';
-
-export default function ProfileScreen() {
-  return <PlaceholderScreen data={tabScreenData.profile} />;
-}
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { PlayerHeader } from '@/components/PlayerHeader';
+import { useAuth } from '@/features/auth/AuthContext';
+import { activeActivityRepository } from '@/services/storage/activeActivityRepository';
+import { colors } from '@/theme';
+export default function ProfileScreen(){const {signOut}=useAuth();const leave=async()=>{const active=await activeActivityRepository.get();if(active){Alert.alert('Activity in progress','Finish or discard the current activity before signing out.');return;}const result=await signOut();if(!result.ok)Alert.alert('Sign out failed',result.message);};return <View style={styles.screen}><PlayerHeader/><View style={styles.content}><Text style={styles.eyebrow}>PLAYER ACCOUNT</Text><Text style={styles.title}>Secure identity</Text><Text style={styles.copy}>Your profile and persistent progression are protected by your CONQUEST account.</Text><Pressable onPress={()=>void leave()} style={styles.button}><Text style={styles.buttonText}>SIGN OUT</Text></Pressable></View></View>}
+const styles=StyleSheet.create({screen:{flex:1,backgroundColor:colors.background},content:{padding:22},eyebrow:{color:colors.cyan,fontSize:10,fontWeight:'900',letterSpacing:2},title:{color:colors.text,fontSize:28,fontWeight:'900',marginTop:8},copy:{color:colors.muted,lineHeight:20,marginTop:8},button:{marginTop:28,height:52,borderRadius:15,borderWidth:1,borderColor:colors.danger,alignItems:'center',justifyContent:'center'},buttonText:{color:colors.text,fontWeight:'900'}});

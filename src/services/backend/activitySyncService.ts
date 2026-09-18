@@ -1,0 +1,7 @@
+import { supabase } from '@/lib/supabase';
+import { activityRepository, type StoredOutdoorActivity } from '@/services/storage/activityRepository';
+let running=false; let lastAttempt=0; const RETRY_DELAY_MS=30_000;
+function payload(activity:StoredOutdoorActivity){return{clientActivityId:activity.clientActivityId,type:activity.type,startedAt:new Date(activity.startedAt).toISOString(),endedAt:new Date(activity.endedAt).toISOString(),acceptedRoutePoints:activity.route.map(({latitude,longitude,timestamp,accuracy})=>({latitude,longitude,timestamp:new Date(timestamp).toISOString(),accuracy}))};}
+export const activitySyncService={
+ async syncPending(ownerUserId:string,force=false){if(running||(!force&&Date.now()-lastAttempt<RETRY_DELAY_MS))return;running=true;lastAttempt=Date.now();try{await activityRepository.recoverInterruptedSync();for(const activity of await activityRepository.pending(ownerUserId)){if(activity.ownerUserId!==ownerUserId)continue;await activityRepository.markSyncing(activity.id);try{const{data,error}=await supabase.functions.invoke('complete-activity',{body:payload(activity)});if(error)throw error;if(!data||typeof data.activityId!=='string')throw new Error('Malformed activity response');await activityRepository.markSynced(activity.id,data.activityId);}catch(error){await activityRepository.markFailed(activity.id,error instanceof Error?error.message:'Activity sync failed');break;}}}finally{running=false;}},
+};

@@ -6,6 +6,7 @@ import { createTrackingState, processPoint, type ActivityPoint, type OutdoorActi
 export type ActiveActivityStatus = 'active' | 'interrupted';
 export interface ActiveActivitySession {
   id: string;
+  ownerUserId: string;
   type: OutdoorActivityType;
   startedAt: number;
   updatedAt: number;
@@ -39,13 +40,14 @@ async function database() {
       );
       CREATE INDEX IF NOT EXISTS activity_points_session_time ON activity_points(session_id, timestamp);`);
     const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(active_activity_sessions)');
+    if (!columns.some(({ name }) => name === 'owner_user_id')) await db.execAsync("ALTER TABLE active_activity_sessions ADD COLUMN owner_user_id TEXT NOT NULL DEFAULT '';");
     if (!columns.some(({ name }) => name === 'native_tracking_started_at')) await db.execAsync('ALTER TABLE active_activity_sessions ADD COLUMN native_tracking_started_at INTEGER;');
     return db;
   });
   return databasePromise;
 }
 
-interface SessionRow { id: string; type: OutdoorActivityType; started_at: number; updated_at: number; status: ActiveActivityStatus; phase: TrackingEngineState['phase']; distance_meters: number; native_tracking_started_at: number | null }
+interface SessionRow { id: string; owner_user_id: string; type: OutdoorActivityType; started_at: number; updated_at: number; status: ActiveActivityStatus; phase: TrackingEngineState['phase']; distance_meters: number; native_tracking_started_at: number | null }
 interface PointRow { id: number; latitude: number; longitude: number; timestamp: number; accuracy: number | null; altitude: number | null; speed: number | null; heading: number | null; break_before: number; accepted: number; provisional: number; reason: PointReason }
 const pointFromRow = (row: PointRow): StoredActivityPoint => ({ id: row.id, latitude: row.latitude, longitude: row.longitude, timestamp: row.timestamp, accuracy: row.accuracy ?? undefined, altitude: row.altitude ?? undefined, speed: row.speed ?? undefined, heading: row.heading ?? undefined, breakBefore: Boolean(row.break_before), accepted: Boolean(row.accepted), provisional: Boolean(row.provisional), reason: row.reason });
 
@@ -60,11 +62,11 @@ export const activityPointRepository = {
 };
 
 export const activeActivityRepository = {
-  async create(type: OutdoorActivityType, startedAt = Date.now()): Promise<ActiveActivitySession> { const db = await database(); const id = `${startedAt}-${type}`; await db.runAsync("INSERT OR REPLACE INTO active_activity_sessions (id, type, started_at, updated_at, status, phase, distance_meters) VALUES (?, ?, ?, ?, 'active', 'acquiring', 0)", id, type, startedAt, startedAt); return { id, type, startedAt, updatedAt: startedAt, status: 'active', phase: 'acquiring', distanceMeters: 0 }; },
+  async create(type: OutdoorActivityType, ownerUserId: string, startedAt = Date.now()): Promise<ActiveActivitySession> { const db = await database(); const id = `${startedAt}-${type}`; await db.runAsync("INSERT OR REPLACE INTO active_activity_sessions (id, owner_user_id, type, started_at, updated_at, status, phase, distance_meters) VALUES (?, ?, ?, ?, ?, 'active', 'acquiring', 0)", id, ownerUserId, type, startedAt, startedAt); return { id, ownerUserId, type, startedAt, updatedAt: startedAt, status: 'active', phase: 'acquiring', distanceMeters: 0 }; },
   async get(): Promise<ActiveActivitySession | undefined> {
     const db = await database(); const row = await db.getFirstAsync<SessionRow>('SELECT * FROM active_activity_sessions ORDER BY started_at DESC LIMIT 1'); if (!row) return undefined;
     const last = await db.getFirstAsync<PointRow>('SELECT id, latitude, longitude, timestamp, accuracy, altitude, speed, heading, break_before, accepted, provisional, reason FROM activity_points WHERE session_id = ? AND accepted = 1 ORDER BY timestamp DESC, id DESC LIMIT 1', row.id);
-    return { id: row.id, type: row.type, startedAt: row.started_at, updatedAt: row.updated_at, status: row.status, phase: row.phase, distanceMeters: row.distance_meters, nativeTrackingStartedAt: row.native_tracking_started_at ?? undefined, lastAcceptedPoint: last ? pointFromRow(last) : undefined };
+    return { id: row.id, ownerUserId: row.owner_user_id, type: row.type, startedAt: row.started_at, updatedAt: row.updated_at, status: row.status, phase: row.phase, distanceMeters: row.distance_meters, nativeTrackingStartedAt: row.native_tracking_started_at ?? undefined, lastAcceptedPoint: last ? pointFromRow(last) : undefined };
   },
   async update(session: Pick<ActiveActivitySession, 'id' | 'phase' | 'distanceMeters'>) { const db = await database(); await db.runAsync('UPDATE active_activity_sessions SET updated_at = ?, phase = ?, distance_meters = ? WHERE id = ?', Date.now(), session.phase, session.distanceMeters, session.id); },
   async markInterrupted(id: string) { const db = await database(); await db.runAsync("UPDATE active_activity_sessions SET status = 'interrupted' WHERE id = ?", id); },
