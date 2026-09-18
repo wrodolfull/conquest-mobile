@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { MapTerritory } from '@/features/territories/types';
 import { colors } from '@/theme';
 
@@ -8,8 +9,20 @@ interface Props { territory: MapTerritory; onClose: () => void }
 
 export function TerritoryCard({ territory, onClose }: Props) {
   const canChallenge = territory.playerInfluence >= 20 && territory.owner !== 'Rodolfo' && territory.owner !== 'Neutral';
+  const entrance = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(entrance, { duration: 180, toValue: 1, useNativeDriver: true }).start();
+  }, [entrance]);
+
   return (
-    <View style={styles.card}>
+    <Animated.View style={[
+      styles.card,
+      {
+        opacity: entrance,
+        transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+      },
+    ]}>
       <View style={styles.heading}>
         <View><Text style={styles.eyebrow}>TERRITORY INTEL</Text><Text style={styles.title}>{territory.name}</Text></View>
         <Pressable accessibilityLabel="Close territory details" onPress={onClose} style={styles.close}><Ionicons name="close" color={colors.muted} size={20} /></Pressable>
@@ -24,7 +37,7 @@ export function TerritoryCard({ territory, onClose }: Props) {
         <Pressable style={styles.secondary}><Text style={styles.secondaryText}>VIEW TERRITORY</Text></Pressable>
         {canChallenge && <Pressable onPress={() => router.push('/battles')} style={styles.challenge}><Ionicons name="flash" size={14} color={colors.background} /><Text style={styles.challengeText}>CHALLENGE OWNER</Text></Pressable>}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -33,7 +46,7 @@ function Stat({ label, value, accent = false }: { label: string; value: string; 
 }
 
 const styles = StyleSheet.create({
-  card: { position: 'absolute', left: 12, right: 12, bottom: 106, padding: 14, borderRadius: 20, backgroundColor: '#0A1512F2', borderWidth: 1, borderColor: '#52665F', shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 12 },
+  card: { position: 'absolute', left: 12, right: 12, bottom: 12, padding: 16, borderRadius: 20, backgroundColor: '#0A1512F2', borderWidth: 1, borderColor: '#52665F', shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 12 },
   heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   eyebrow: { color: colors.lime, fontSize: 8, fontWeight: '900', letterSpacing: 1.4 },
   title: { color: colors.text, fontSize: 18, fontWeight: '900', marginTop: 2 },
