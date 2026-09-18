@@ -13,6 +13,7 @@ export interface CompletedOutdoorActivity {
   id: string; type: OutdoorActivityType; startedAt: number; endedAt: number; durationSeconds: number;
   distanceMeters: number; route: ActivityPoint[]; traversals: TerritoryTraversal[]; influenceEarned: number;
   unlockedRewards: string[]; energyEarned: number; xpEarned: number;
+  specialZones: { poiId: string; poiName: string; distanceMeters: number; bonusXp: number }[];
 }
 
 export const influenceForDistance = (meters: number) => Math.floor(Math.max(0, meters) / INFLUENCE_METERS_PER_POINT);

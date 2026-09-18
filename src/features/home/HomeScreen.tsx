@@ -10,10 +10,12 @@ import { ConquestMap } from '@/features/map/ConquestMap';
 import { MapErrorBoundary } from '@/features/map/MapErrorBoundary';
 import type { MapTerritory } from '@/features/territories/types';
 import { colors } from '@/theme';
+import { usePois } from '@/features/poi/PoiContext';
 
 export function HomeScreen() {
   const [selectedTerritory, setSelectedTerritory] = useState<MapTerritory | null>(null);
   const controlsEntrance = useRef(new Animated.Value(1)).current;
+  const { notice, dismissNotice, simulate } = usePois();
 
   const handleTerritorySelectionChange = (territory: MapTerritory | null) => {
     setSelectedTerritory(territory);
@@ -42,6 +44,8 @@ export function HomeScreen() {
         <PlayerHeader />
         <View style={styles.arena}><ArenaCard /></View>
       </View>
+      {notice ? <Pressable onPress={dismissNotice} style={styles.poiNotice}><Ionicons name="location" size={18} color={colors.lime} /><Text style={styles.poiNoticeText}>{notice}</Text><Ionicons name="close" size={16} color={colors.muted} /></Pressable> : null}
+      {__DEV__ ? <View style={styles.dev}><Text style={styles.devTitle}>DEV POI</Text>{(['arena', 'training_ground'] as const).map((type) => <View key={type} style={styles.devRow}><Text style={styles.devLabel}>{type === 'arena' ? 'Arena' : 'Park'}</Text><Pressable onPress={() => simulate(type, 'inside')}><Text style={styles.devAction}>ENTER</Text></Pressable><Pressable onPress={() => simulate(type, 'outside')}><Text style={styles.devAction}>LEAVE</Text></Pressable></View>)}</View> : null}
 
       {selectedTerritory === null ? (
         <Animated.View
@@ -82,6 +86,9 @@ const styles = StyleSheet.create({
   hudLayer: { position: 'absolute', top: 0, left: 0, right: 0 },
   arena: { marginTop: 8 },
   actionLayer: { position: 'absolute', left: 12, right: 12, bottom: 12, gap: 8 },
+  poiNotice: { position: 'absolute', top: 154, left: 12, right: 68, minHeight: 48, padding: 10, borderRadius: 14, backgroundColor: '#10221FF5', borderWidth: 1, borderColor: '#73993D', flexDirection: 'row', alignItems: 'center', gap: 9 },
+  poiNoticeText: { flex: 1, color: colors.text, fontSize: 10, fontWeight: '800', lineHeight: 14 },
+  dev: { position: 'absolute', right: 12, top: 210, width: 126, padding: 8, borderRadius: 12, backgroundColor: '#07100EEB', borderWidth: 1, borderColor: '#385149' }, devTitle: { color: colors.gold, fontSize: 7, fontWeight: '900' }, devRow: { flexDirection: 'row', gap: 6, marginTop: 5, alignItems: 'center' }, devLabel: { color: colors.muted, fontSize: 7, width: 30 }, devAction: { color: colors.cyan, fontSize: 7, fontWeight: '900' },
   start: {
     minHeight: 64,
     flexDirection: 'row',

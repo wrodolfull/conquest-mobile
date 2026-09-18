@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "rm -rf .test-dist && tsc src/features/poi/config.ts src/features/poi/types.ts src/features/poi/geofenceEngine.ts src/features/poi/poiRules.ts src/features/poi/arenaRanking.ts --outDir .test-dist --module commonjs --target es2022 --skipLibCheck && node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

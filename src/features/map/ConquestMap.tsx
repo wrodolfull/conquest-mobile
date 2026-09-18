@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polygon, type LatLng } from 'react-native-maps';
-import { generateArenas, generateTerritories } from '@/features/territories/territoryGenerator';
-import type { MapArena, MapTerritory } from '@/features/territories/types';
-import { FALLBACK_LOCATION, getPlayerLocation } from '@/services/location/locationService';
+import { generateTerritories } from '@/features/territories/territoryGenerator';
+import type { MapTerritory } from '@/features/territories/types';
+import { FALLBACK_LOCATION } from '@/services/location/locationService';
+import { usePois } from '@/features/poi/PoiContext';
 import { colors } from '@/theme';
 import { activityRepository } from '@/services/storage/activityRepository';
-import { ArenaDetailsCard } from './ArenaDetailsCard';
+import { PoiIntelCard } from './PoiIntelCard';
 import { conquestMapStyle } from './mapStyle';
 import { PlayerLocationMarker } from './PlayerLocationMarker';
 import { territoryVisual } from './mapVisuals';
@@ -20,24 +21,18 @@ interface ConquestMapProps {
 
 export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: ConquestMapProps) {
   const mapRef = useRef<MapView>(null);
-  const [coordinate, setCoordinate] = useState<LatLng>(FALLBACK_LOCATION);
-  const [accuracy, setAccuracy] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [usingFallback, setUsingFallback] = useState(false);
+  const { location, locationReady, locationDenied, presences } = usePois();
+  const coordinate: LatLng = location ?? FALLBACK_LOCATION;
+  const accuracy = location?.accuracy ?? null;
+  const loading = !locationReady;
+  const usingFallback = locationDenied;
   const [message, setMessage] = useState<string | null>(null);
-  const [arena, setArena] = useState<MapArena | null>(null);
+  const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
   const [influenceRevision, setInfluenceRevision] = useState(0);
 
   useEffect(() => activityRepository.subscribe(() => setInfluenceRevision((revision) => revision + 1)), []);
 
-  useEffect(() => { void getPlayerLocation().then((result) => {
-    setCoordinate(result.coordinate);
-    setAccuracy(result.accuracy);
-    setUsingFallback(result.isFallback);
-    if (result.permissionDenied) setMessage('Enable location to play with real territories around you. Showing a mock area for now.');
-    else if (result.isFallback) setMessage('Location is temporarily unavailable. Showing a mock area for now.');
-    setLoading(false);
-  }); }, []);
+  useEffect(() => { if (locationDenied) setMessage('Enable location to play with real POIs and territories. Showing a mock area for now.'); }, [locationDenied]);
 
   const territories = useMemo(() => {
     // The revision makes repository writes visible without coupling map generation
@@ -48,17 +43,16 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
       playerInfluence: territory.playerInfluence + activityRepository.influenceFor(territory.id),
     }));
   }, [coordinate, influenceRevision]);
-  const arenas = useMemo(() => generateArenas(coordinate), [coordinate]);
   const selectTerritory = (selected: MapTerritory) => {
-    setArena(null);
+    setSelectedPoiId(null);
     onTerritorySelectionChange(selected);
   };
   const clearTerritory = () => {
     onTerritorySelectionChange(null);
   };
-  const selectArena = (selected: MapArena) => {
+  const selectPoi = (id: string) => {
     clearTerritory();
-    setArena(selected);
+    setSelectedPoiId(id);
   };
   const centerOnPlayer = () => {
     mapRef.current?.animateCamera({ center: coordinate }, { duration: 450 });
@@ -72,7 +66,7 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
       mapType="standard"
       onPress={() => {
         if (selectedTerritory) clearTerritory();
-        if (arena) setArena(null);
+        if (selectedPoiId) setSelectedPoiId(null);
       }}
       ref={mapRef}
       showsMyLocationButton={false}
@@ -81,8 +75,8 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
       toolbarEnabled={false}
     >
       {territories.map((cell) => <Polygon key={cell.id} coordinates={cell.boundary} onPress={() => selectTerritory(cell)} tappable {...territoryVisual(cell)} />)}
-      {arenas.map((item) => <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={item.coordinate} key={item.id} onPress={() => selectArena(item)} tracksViewChanges={false}>
-        <View style={styles.arenaMarker}><Ionicons name="barbell" color="#F1E9FF" size={19} /></View>
+      {presences.map(({ poi }) => <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={poi} key={poi.id} onPress={() => selectPoi(poi.id)} tracksViewChanges={false}>
+        <View style={[styles.poiMarker, poi.type === 'training_ground' && styles.groundMarker]}><Ionicons name={poi.type === 'arena' ? 'barbell' : 'flag'} color={poi.type === 'arena' ? '#F1E9FF' : '#07100E'} size={17} /></View>
       </Marker>)}
       <PlayerLocationMarker latitude={coordinate.latitude} longitude={coordinate.longitude} accuracy={accuracy} />
     </MapView>
@@ -93,13 +87,14 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
       <Ionicons name="locate" color={colors.cyan} size={21} />
     </Pressable>
     {selectedTerritory && <TerritoryCard territory={selectedTerritory} onClose={clearTerritory} />}
-    {arena && <ArenaDetailsCard arena={arena} onClose={() => setArena(null)} />}
+    {presences.find((item) => item.poi.id === selectedPoiId) ? <PoiIntelCard presence={presences.find((item) => item.poi.id === selectedPoiId)!} onClose={() => setSelectedPoiId(null)} /> : null}
   </View>;
 }
 
 const styles = StyleSheet.create({
   container: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', backgroundColor: '#0A1714' },
-  arenaMarker: { width: 43, height: 43, borderRadius: 14, backgroundColor: '#5E35A9E8', borderWidth: 2, borderColor: '#CDB4FF', justifyContent: 'center', alignItems: 'center', transform: [{ rotate: '45deg' }], elevation: 9 },
+  poiMarker: { width: 37, height: 37, borderRadius: 13, backgroundColor: '#5E35A9E8', borderWidth: 2, borderColor: '#CDB4FF', justifyContent: 'center', alignItems: 'center', elevation: 7 },
+  groundMarker: { backgroundColor: '#B7E85AE8', borderColor: '#E4FFAE' },
   loading: { position: 'absolute', top: '42%', alignSelf: 'center', borderRadius: 14, backgroundColor: '#07100EEB', paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }, loadingText: { color: colors.text, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   notice: { position: 'absolute', top: 106, left: 12, right: 12, minHeight: 42, borderRadius: 13, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: '#181B14F2', borderWidth: 1, borderColor: '#6A6033', flexDirection: 'row', alignItems: 'center', gap: 8 }, noticeText: { color: '#E7E7DB', fontSize: 10, lineHeight: 14, flex: 1 },
   live: { position: 'absolute', top: 106, left: 12, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: '#07100ED9', borderWidth: 1, borderColor: '#29413A', flexDirection: 'row', alignItems: 'center', gap: 6 }, liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.cyan }, liveText: { color: colors.text, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
