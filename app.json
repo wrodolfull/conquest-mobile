@@ -11,7 +11,11 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow CONQUEST to use your location to place you in the game world and discover nearby territories."
+          "locationWhenInUsePermission": "Allow CONQUEST to use precise location to map your outdoor fitness route, territories and nearby game locations.",
+          "locationAlwaysAndWhenInUsePermission": "Allow CONQUEST to record an active outdoor workout when the app is in the background or your screen is locked.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "isIosBackgroundLocationEnabled": true
         }
       ]
     ],
@@ -19,11 +23,13 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow CONQUEST to use your location to place you in the game world and discover nearby territories."
+        "NSLocationWhenInUseUsageDescription": "Allow CONQUEST to use precise location to map your outdoor fitness route, territories and nearby game locations.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow CONQUEST to record an active outdoor workout when the app is in the background or your screen is locked.",
+        "UIBackgroundModes": ["location"]
       }
     },
     "android": {
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_LOCATION"],
       "adaptiveIcon": { "backgroundColor": "#07100E" }
     }
   }

@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { LOCATION_OPTIONS, fromLocation, type ActivityPoint } from '@/features/activity/tracking';
+import { assessPoint, type ActivityPoint } from '@/features/activity/tracking';
+import { LOCATION_OPTIONS, fromLocation } from '@/services/location/locationTrackingOptions';
 import { FALLBACK_LOCATION } from '@/services/location/locationService';
 import { POI_LOCATION_MAXIMUM_ACCURACY_METERS } from './config';
 import { isGeofenceActive, updateGeofence } from './geofenceEngine';
@@ -32,6 +33,7 @@ export function PoiProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string>();
   const [simulation, setSimulation] = useState<Simulation>({});
   const previousStatuses = useRef(new Map<string, PoiPresence['status']>());
+  const reliableLocation = useRef<ActivityPoint | undefined>(undefined);
 
   useEffect(() => {
     let mounted = true;
@@ -45,8 +47,8 @@ export function PoiProvider({ children }: { children: ReactNode }) {
         return;
       }
       const initial = await Location.getLastKnownPositionAsync();
-      if (mounted && initial) setLocation(fromLocation(initial));
-      subscription = await Location.watchPositionAsync(LOCATION_OPTIONS, (value) => mounted && setLocation(fromLocation(value)));
+      if (mounted && initial) { const point = fromLocation(initial); if (assessPoint(point, undefined, 'walking').accepted) { reliableLocation.current = point; setLocation(point); } }
+      subscription = await Location.watchPositionAsync(LOCATION_OPTIONS, (value) => { const point = fromLocation(value); if (mounted && assessPoint(point, reliableLocation.current, 'walking').accepted) { reliableLocation.current = point; setLocation(point); } });
       if (mounted) setLocationReady(true);
     })().catch(() => { if (mounted) setLocationReady(true); });
     return () => { mounted = false; subscription?.remove(); };
@@ -81,6 +83,8 @@ export function PoiProvider({ children }: { children: ReactNode }) {
       previousStatuses.current.set(presence.poi.id, presence.status);
     });
   }, [presences]);
+
+  useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(undefined), 4_500); return () => clearTimeout(timer); }, [notice]);
 
   const value = useMemo<PoiContextValue>(() => ({
     location, pois, presences, locationReady, locationDenied, notice,

@@ -29,10 +29,16 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
   const [message, setMessage] = useState<string | null>(null);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
   const [influenceRevision, setInfluenceRevision] = useState(0);
+  const initiallyCentered = useRef(false);
 
   useEffect(() => activityRepository.subscribe(() => setInfluenceRevision((revision) => revision + 1)), []);
 
   useEffect(() => { if (locationDenied) setMessage('Enable location to play with real POIs and territories. Showing a mock area for now.'); }, [locationDenied]);
+  useEffect(() => {
+    if (!locationReady || !location || initiallyCentered.current) return;
+    initiallyCentered.current = true;
+    mapRef.current?.animateToRegion({ ...location, latitudeDelta: 0.013, longitudeDelta: 0.013 }, 350);
+  }, [location, locationReady]);
 
   const territories = useMemo(() => {
     // The revision makes repository writes visible without coupling map generation
@@ -55,14 +61,13 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
     setSelectedPoiId(id);
   };
   const centerOnPlayer = () => {
-    mapRef.current?.animateCamera({ center: coordinate }, { duration: 450 });
+    mapRef.current?.animateToRegion({ ...coordinate, latitudeDelta: 0.013, longitudeDelta: 0.013 }, 450);
   };
 
   return <View style={styles.container}>
     <MapView
       customMapStyle={[...conquestMapStyle]}
       initialRegion={{ ...coordinate, latitudeDelta: 0.013, longitudeDelta: 0.013 }}
-      key={`${coordinate.latitude}:${coordinate.longitude}`}
       mapType="standard"
       onPress={() => {
         if (selectedTerritory) clearTerritory();

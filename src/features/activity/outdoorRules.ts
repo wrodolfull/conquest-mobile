@@ -1,5 +1,5 @@
 import type { ActivityPoint, OutdoorActivityType } from './tracking';
-import { territoryAt as findTerritory } from '@/features/territories/territoryGrid';
+import { territoryAt as findTerritory } from '../territories/territoryGrid';
 
 export const INFLUENCE_METERS_PER_POINT = 100;
 export const DISTANCE_MILESTONES = [
@@ -22,6 +22,7 @@ export const rewardsForDistance = (meters: number) => DISTANCE_MILESTONES.filter
 export function calculateTraversals(points: readonly ActivityPoint[]): TerritoryTraversal[] {
   const distances = new Map<string, { name: string; meters: number }>();
   points.slice(1).forEach((point, index) => {
+    if (point.breakBefore) return;
     const previous = points[index]!;
     const territory = findTerritory({ latitude: (previous.latitude + point.latitude) / 2, longitude: (previous.longitude + point.longitude) / 2 });
     const current = distances.get(territory.id) ?? { name: territory.name, meters: 0 };
