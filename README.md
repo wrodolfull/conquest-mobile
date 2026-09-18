@@ -17,6 +17,42 @@ A visual prototype for a location-based fitness strategy game, built with React 
 
 If LAN discovery is unavailable, start with `npx expo start --tunnel`.
 
+### Updating an existing checkout
+
+`git pull` must finish successfully before `npm install` can install the dependencies
+from the new version. If Git reports that local changes would be overwritten, preserve
+them in a stash first:
+
+```bash
+git status
+git stash push --include-untracked -m "local changes before map update"
+git pull --ff-only origin main
+npm install
+npx expo start --clear
+```
+
+Keep the stash as a backup until the app is working. Use `git stash list` to see it.
+Only run `git stash pop` later if those local edits are still needed; applying an old
+`package.json`, `package-lock.json`, or `app.json` over the updated files can remove the
+map dependencies or configuration again.
+
+Confirm that the update was actually installed with:
+
+```bash
+git status
+git log -1 --oneline
+npm ls expo-location react-native-maps
+```
+
+The Home/Map screen asks for foreground location permission when it opens. When
+permission is allowed it centers the game world on the device; when it is denied or a
+position cannot be obtained, it deliberately displays the local mock world and a
+non-blocking explanation. Android location services must also be enabled.
+
+If Expo Go still shows an older bundle, close the project in Expo Go, stop the local
+Expo process, run `npx expo start --clear`, and scan the newly displayed QR code. Ensure
+the terminal is running in this repository rather than another copy of the project.
+
 ## Quality checks
 
 ```bash
@@ -26,4 +62,7 @@ npm run lint
 
 ## Scope
 
-This version contains a responsive, navigable mocked prototype with Map, Activities, Inventory, Battles, Ranking, and Profile tabs. It does not include authentication, real GPS tracking, map services, backend services, or multiplayer.
+This version contains a responsive prototype with a real foreground-location map,
+locally generated mock territories and Arenas, and Activities, Inventory, Battles,
+Ranking, and Profile tabs. It does not include authentication, continuous/background
+GPS tracking, backend services, persistent territory ownership, or multiplayer.
