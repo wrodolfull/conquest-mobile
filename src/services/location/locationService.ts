@@ -9,6 +9,7 @@ export const FALLBACK_LOCATION: LatLng = {
 
 export interface PlayerLocationResult {
   coordinate: LatLng;
+  accuracy: number | null;
   isFallback: boolean;
   permissionDenied: boolean;
 }
@@ -34,6 +35,7 @@ export async function getPlayerLocation(): Promise<PlayerLocationResult> {
     if (!permission.granted) {
       return {
         coordinate: FALLBACK_LOCATION,
+        accuracy: null,
         isFallback: true,
         permissionDenied: true,
       };
@@ -54,12 +56,14 @@ export async function getPlayerLocation(): Promise<PlayerLocationResult> {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       },
+      accuracy: location.coords.accuracy,
       isFallback: false,
       permissionDenied: false,
     };
   } catch {
     return {
       coordinate: FALLBACK_LOCATION,
+      accuracy: null,
       isFallback: true,
       permissionDenied: false,
     };
