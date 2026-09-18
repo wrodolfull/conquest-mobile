@@ -1,22 +1,15 @@
 import type { LatLng } from 'react-native-maps';
 import { getTerritoryGameSeed } from '@/mocks/territories/territoryData';
 import type { MapArena, MapTerritory } from './types';
+import { territoryAt, territoryCell } from './territoryGrid';
 
 // This small hex-grid adapter keeps geographic generation independent from rendering.
 // It can be replaced with H3's gridDisk/cellToBoundary when the project adopts H3.
-const HEX_RADIUS_KM = 0.19;
 const EARTH_LAT_KM = 110.574;
 
 function offsetCoordinate(origin: LatLng, eastKm: number, northKm: number): LatLng {
   const longitudeKm = 111.32 * Math.cos(origin.latitude * Math.PI / 180);
   return { latitude: origin.latitude + northKm / EARTH_LAT_KM, longitude: origin.longitude + eastKm / longitudeKm };
-}
-
-function createBoundary(center: LatLng): LatLng[] {
-  return Array.from({ length: 6 }, (_, index) => {
-    const angle = (60 * index - 30) * Math.PI / 180;
-    return offsetCoordinate(center, HEX_RADIUS_KM * Math.cos(angle), HEX_RADIUS_KM * Math.sin(angle));
-  });
 }
 
 export function generateTerritories(origin: LatLng): MapTerritory[] {
@@ -27,11 +20,11 @@ export function generateTerritories(origin: LatLng): MapTerritory[] {
     for (let r = rMin; r <= rMax; r += 1) cells.push([q, r]);
   }
 
-  return cells.map(([q, r], index) => {
-    const center = offsetCoordinate(origin, HEX_RADIUS_KM * Math.sqrt(3) * (q + r / 2), HEX_RADIUS_KM * 1.5 * r);
-    const gameData = getTerritoryGameSeed(index);
-    const numericId = 1800 + ((Math.abs(Math.round(origin.latitude * 1000)) + index * 37) % 700);
-    return { id: `local-${q}-${r}`, name: `Jardim #${numericId}`, boundary: createBoundary(center), ...gameData };
+  const originCell = territoryAt(origin);
+  return cells.map(([qOffset, rOffset]) => {
+    const cell = territoryCell(originCell.q + qOffset, originCell.r + rOffset);
+    const gameData = getTerritoryGameSeed(Math.abs(cell.q * 31 + cell.r * 17));
+    return { id: cell.id, name: cell.name, boundary: cell.boundary, ...gameData };
   });
 }
 

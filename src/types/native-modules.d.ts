@@ -16,7 +16,7 @@ declare module 'react-native-maps' {
   export interface LatLng { latitude: number; longitude: number }
   export interface Region extends LatLng { latitudeDelta: number; longitudeDelta: number }
   interface Camera { center?: LatLng; zoom?: number; pitch?: number; heading?: number; altitude?: number }
-  interface MapProps { children?: ReactNode; initialRegion?: Region; mapType?: string; onPress?: () => void; showsUserLocation?: boolean; showsMyLocationButton?: boolean; toolbarEnabled?: boolean; style?: StyleProp<ViewStyle>; customMapStyle?: object[] }
+  interface MapProps { children?: ReactNode; initialRegion?: Region; mapType?: string; onMapReady?: () => void; onPress?: () => void; showsUserLocation?: boolean; showsMyLocationButton?: boolean; toolbarEnabled?: boolean; style?: StyleProp<ViewStyle>; customMapStyle?: object[] }
   interface MarkerProps { children?: ReactNode; coordinate: LatLng; anchor?: { x: number; y: number }; onPress?: () => void; tracksViewChanges?: boolean; zIndex?: number; pinColor?: string; title?: string }
   interface PolylineProps { coordinates: LatLng[]; strokeColor?: string; strokeWidth?: number }
   interface PolygonProps { coordinates: LatLng[]; fillColor?: string; strokeColor?: string; strokeWidth?: number; tappable?: boolean; onPress?: () => void }
@@ -24,6 +24,7 @@ declare module 'react-native-maps' {
   export default class MapView extends Component<MapProps> {
     animateToRegion(region: Region, duration?: number): void;
     animateCamera(camera: Camera, options?: { duration?: number }): void;
+    fitToCoordinates(coordinates: LatLng[], options?: { animated?: boolean; edgePadding?: { top: number; right: number; bottom: number; left: number } }): void;
   }
   export const Marker: ComponentType<MarkerProps>;
   export const Polygon: ComponentType<PolygonProps>;

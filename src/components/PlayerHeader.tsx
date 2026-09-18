@@ -36,5 +36,5 @@ const styles = StyleSheet.create({
   levelText: { fontSize: 9, fontWeight: '900', color: colors.background },
   player: { flex: 1, maxWidth: 145 }, welcome: { color: colors.muted, fontSize: 7, fontWeight: '800', letterSpacing: 1 }, name: { color: colors.text, fontSize: 16, fontWeight: '900' },
   xpTrack: { width: 96, height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden', marginTop: 4 }, xpFill: { height: '100%' },
-  actions: { position: 'absolute', right: 53, top: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  actions: { position: 'absolute', right: 63, top: 10, flexDirection: 'row', alignItems: 'center', gap: 15 },
 });
