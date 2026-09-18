@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { updateGeofence } = require('../.test-dist/geofenceEngine.js');
-const { arenaPointsForTrainingPower, xpForSegment, xpForMixedRoute } = require('../.test-dist/poiRules.js');
-const { buildLeaderboard } = require('../.test-dist/arenaRanking.js');
+const { updateGeofence } = require('../.test-dist/features/poi/geofenceEngine.js');
+const { arenaPointsForTrainingPower, xpForSegment, xpForMixedRoute } = require('../.test-dist/features/poi/poiRules.js');
+const { buildLeaderboard } = require('../.test-dist/features/poi/arenaRanking.js');
 const poi = { enterRadiusMeters: 60, exitRadiusMeters: 90, gracePeriodSeconds: 20 };
 
 test('geofence uses enter/exit hysteresis and grace', () => {
