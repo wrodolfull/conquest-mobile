@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     backgroundColor: colors.cyan,
-    borderWidth: 2.5,
+    borderWidth: 3,
     borderColor: '#E9FFFF',
     shadowColor: colors.cyan,
     shadowOpacity: 0.9,

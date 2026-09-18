@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-unresolved
 import * as Location from 'expo-location';
 import type { LatLng } from 'react-native-maps';
 
