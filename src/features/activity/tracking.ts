@@ -21,8 +21,9 @@ export interface PointDecision { accepted: boolean; provisional?: boolean; reaso
 
 export const GPS_FILTER = {
   maximumAccuracyMeters: 45,
-  startupAccuracyMeters: 25,
-  startupConsecutiveSamples: 3,
+  startupAccuracyMeters: 35,
+  startupRequiredUsableSamples: 3,
+  startupWindowSize: 5,
   startupCoherenceMeters: 35,
   minimumIntervalMs: 900,
   gapIntervalMs: 20_000,
@@ -101,9 +102,17 @@ export function processPoint(current: TrackingEngineState, point: ActivityPoint)
   const decisions: ProcessResult['decisions'] = [];
   if (state.phase === 'acquiring') {
     const usable = validCoordinate(point) && accuracyOf(point) <= GPS_FILTER.startupAccuracyMeters;
-    const coherent = !state.startup.length || (point.timestamp > state.startup.at(-1)!.timestamp && segmentDistanceMeters(state.startup.at(-1)!, point) <= GPS_FILTER.startupCoherenceMeters);
-    state.startup = usable && coherent ? [...state.startup, point].slice(-GPS_FILTER.startupConsecutiveSamples) : usable ? [point] : [];
-    if (state.startup.length < GPS_FILTER.startupConsecutiveSamples) { state.rejected.push(point); decisions.push({ point, decision: { accepted: false, reason: 'stabilizing' } }); return { state, decisions }; }
+    state.startup = [...state.startup, point].slice(-GPS_FILTER.startupWindowSize);
+    const usableWindow = state.startup.filter((sample) => validCoordinate(sample) && accuracyOf(sample) <= GPS_FILTER.startupAccuracyMeters);
+    const coherent = usableWindow.every((sample, index) => index === 0 || (
+      sample.timestamp > usableWindow[index - 1]!.timestamp
+      && segmentDistanceMeters(usableWindow[index - 1]!, sample) <= GPS_FILTER.startupCoherenceMeters
+    ));
+    if (!usable || usableWindow.length < GPS_FILTER.startupRequiredUsableSamples || !coherent) {
+      state.rejected.push(point); decisions.push({ point, decision: { accepted: false, reason: usable ? 'stabilizing' : accuracyOf(point) > GPS_FILTER.startupAccuracyMeters ? 'poor-accuracy' : 'stabilizing' } }); return { state, decisions };
+    }
+    // Only the reliable point that completes stabilization becomes the route
+    // anchor. Acquisition movement is deliberately never connected to it.
     state.phase = 'tracking'; state.accepted.push(point); decisions.push({ point, decision: { accepted: true, reason: 'accepted' } }); return { state, decisions };
   }
 
@@ -133,7 +142,7 @@ export function processPoint(current: TrackingEngineState, point: ActivityPoint)
 }
 
 export function rollingGpsQuality(state: TrackingEngineState): GpsQuality {
-  if (state.phase === 'acquiring' || state.recentAccuracies.length < GPS_FILTER.startupConsecutiveSamples) return 'ACQUIRING';
+  if (state.phase === 'acquiring' || state.recentAccuracies.length < GPS_FILTER.startupRequiredUsableSamples) return 'ACQUIRING';
   const mean = state.recentAccuracies.reduce((sum, value) => sum + value, 0) / state.recentAccuracies.length;
   return mean <= 8 ? 'EXCELLENT' : mean <= 18 ? 'GOOD' : mean <= 30 ? 'FAIR' : 'POOR';
 }
