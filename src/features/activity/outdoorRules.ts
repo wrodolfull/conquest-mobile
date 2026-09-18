@@ -1,4 +1,5 @@
 import type { ActivityPoint, OutdoorActivityType } from './tracking';
+import { territoryAt as findTerritory } from '@/features/territories/territoryGrid';
 
 export const INFLUENCE_METERS_PER_POINT = 100;
 export const DISTANCE_MILESTONES = [
@@ -17,22 +18,11 @@ export interface CompletedOutdoorActivity {
 export const influenceForDistance = (meters: number) => Math.floor(Math.max(0, meters) / INFLUENCE_METERS_PER_POINT);
 export const rewardsForDistance = (meters: number) => DISTANCE_MILESTONES.filter((item) => meters >= item.distanceKm * 1000);
 
-// The existing local world is a lightweight geographic grid rather than H3. Segment
-// midpoints are quantized to its approximately 380m territory footprint.
-export function territoryAt(latitude: number, longitude: number) {
-  const latBand = Math.floor((latitude + 90) / 0.0034);
-  const longitudeScale = Math.max(0.2, Math.cos(latitude * Math.PI / 180));
-  const lonBand = Math.floor((longitude + 180) * longitudeScale / 0.0034);
-  const id = `local-${latBand}-${lonBand}`;
-  const number = 1800 + Math.abs((latBand * 31 + lonBand * 17) % 700);
-  return { id, name: `Jardim #${number}` };
-}
-
 export function calculateTraversals(points: readonly ActivityPoint[]): TerritoryTraversal[] {
   const distances = new Map<string, { name: string; meters: number }>();
   points.slice(1).forEach((point, index) => {
     const previous = points[index]!;
-    const territory = territoryAt((previous.latitude + point.latitude) / 2, (previous.longitude + point.longitude) / 2);
+    const territory = findTerritory({ latitude: (previous.latitude + point.latitude) / 2, longitude: (previous.longitude + point.longitude) / 2 });
     const current = distances.get(territory.id) ?? { name: territory.name, meters: 0 };
     current.meters += haversine(previous, point);
     distances.set(territory.id, current);

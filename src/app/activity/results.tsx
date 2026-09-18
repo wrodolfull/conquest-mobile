@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { ActivityFlowShell } from '@/components/ActivityFlowShell';
@@ -15,15 +15,40 @@ export default function ActivityResultsScreen() {
   useEffect(() => { if (params.activityId) void activityRepository.find(params.activityId).then(setResult); }, [params.activityId]);
   if (type === 'indoor') return <IndoorResult ticks={Number.parseInt(params.ticks ?? '1', 10)} />;
   if (!result) return <ActivityFlowShell eyebrow="ACTIVITY COMPLETE" title="Loading result"><Text style={styles.empty}>Securing route…</Text></ActivityFlowShell>;
-  const start = result.route[0]; const finish = result.route.at(-1);
+  const start = result.route[0];
   return <ActivityFlowShell eyebrow="ACTIVITY COMPLETE" title={type[0]!.toUpperCase() + type.slice(1)} canGoBack={false}>
     <View style={styles.primary}><Text style={styles.label}>DISTANCE</Text><Text style={styles.value}>{(result.distanceMeters / 1000).toFixed(2)}<Text style={styles.unit}> km</Text></Text><Text style={styles.muted}>{formatDuration(result.durationSeconds)} duration</Text></View>
     <View style={styles.stats}><Stat label="XP" value={`+${result.xpEarned}`} /><Stat label="ENERGY" value={`+${result.energyEarned}`} /><Stat label="TERRITORIES" value={`${result.traversals.length}`} /><Stat label="INFLUENCE" value={`+${result.influenceEarned}`} /></View>
-    <Text style={styles.heading}>ROUTE</Text><View style={styles.map}>{start ? <MapView initialRegion={{ latitude: start.latitude, longitude: start.longitude, latitudeDelta: 0.012, longitudeDelta: 0.012 }} style={StyleSheet.absoluteFill} toolbarEnabled={false}><Polyline coordinates={result.route} strokeColor={colors.cyan} strokeWidth={5} /><Marker coordinate={start} pinColor={colors.lime} title="Start" />{finish && <Marker coordinate={finish} pinColor={colors.cyan} title="Finish" />}</MapView> : <Text style={styles.empty}>No accepted GPS points were recorded.</Text>}</View>
+    <Text style={styles.heading}>ROUTE</Text><View style={styles.map}>{start ? <RouteMap route={result.route} /> : <Text style={styles.empty}>No accepted GPS points were recorded.</Text>}</View>
     <Text style={styles.heading}>TERRITORY IMPACT</Text><View style={styles.panel}>{result.traversals.length ? result.traversals.map((item) => <View key={item.territoryId} style={styles.row}><View style={styles.grow}><Text style={styles.rowTitle}>{item.territoryName}</Text><Text style={styles.muted}>{(item.distanceMeters / 1000).toFixed(2)} km</Text></View><Text style={styles.influence}>+{item.influenceEarned} influence</Text></View>) : <Text style={styles.empty}>Move between two accepted points to generate impact.</Text>}</View>
     <Text style={styles.heading}>DISTANCE REWARDS</Text><View style={styles.panel}>{DISTANCE_MILESTONES.map((item) => { const earned = result.distanceMeters >= item.distanceKm * 1000; return <View key={item.distanceKm} style={[styles.row, !earned && styles.locked]}><Text style={styles.growText}>{item.distanceKm} km — {item.rarity}</Text><Text style={earned ? styles.earned : styles.muted}>{earned ? 'EARNED' : 'LOCKED'}</Text></View>; })}</View>
     <Pressable onPress={() => router.replace('/map')} style={styles.done}><Text style={styles.doneText}>Back to home</Text></Pressable>
   </ActivityFlowShell>;
+}
+function RouteMap({ route }: { route: CompletedOutdoorActivity['route'] }) {
+  const mapRef = useRef<MapView>(null);
+  const start = route[0]!;
+  const finish = route.at(-1)!;
+  const fitRoute = useCallback(() => {
+    if (route.length > 1) {
+      mapRef.current?.fitToCoordinates(route, {
+        animated: false,
+        edgePadding: { top: 42, right: 42, bottom: 42, left: 42 },
+      });
+    }
+  }, [route]);
+
+  return <MapView
+    initialRegion={{ latitude: start.latitude, longitude: start.longitude, latitudeDelta: 0.012, longitudeDelta: 0.012 }}
+    onMapReady={fitRoute}
+    ref={mapRef}
+    style={StyleSheet.absoluteFill}
+    toolbarEnabled={false}
+  >
+    <Polyline coordinates={route} strokeColor={colors.cyan} strokeWidth={5} />
+    <Marker coordinate={start} pinColor={colors.lime} title="Start" />
+    <Marker coordinate={finish} pinColor={colors.cyan} title="Finish" />
+  </MapView>;
 }
 function Stat({ label, value }: { label: string; value: string }) { return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>; }
 function IndoorResult({ ticks }: { ticks: number }) { const result = createMockResult('indoor', Number.isFinite(ticks) ? ticks : 1); return <ActivityFlowShell eyebrow="ACTIVITY COMPLETE" title="Indoor" canGoBack={false}><View style={styles.primary}><Text style={styles.label}>TRAINING POWER</Text><Text style={styles.value}>{result.trainingPower} TP</Text><Text style={styles.muted}>{formatDuration(result.durationSeconds)}</Text></View><View style={styles.stats}><Stat label="XP" value={`+${result.xp}`} /><Stat label="ENERGY" value={`+${result.energy}`} /><Stat label="ARENA" value={`+${result.arenaPoints}`} /></View><Pressable onPress={() => router.replace('/map')} style={styles.done}><Text style={styles.doneText}>Back to home</Text></Pressable></ActivityFlowShell>; }

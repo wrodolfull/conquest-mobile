@@ -6,6 +6,7 @@ import { generateArenas, generateTerritories } from '@/features/territories/terr
 import type { MapArena, MapTerritory } from '@/features/territories/types';
 import { FALLBACK_LOCATION, getPlayerLocation } from '@/services/location/locationService';
 import { colors } from '@/theme';
+import { activityRepository } from '@/services/storage/activityRepository';
 import { ArenaDetailsCard } from './ArenaDetailsCard';
 import { conquestMapStyle } from './mapStyle';
 import { PlayerLocationMarker } from './PlayerLocationMarker';
@@ -25,6 +26,9 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
   const [usingFallback, setUsingFallback] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [arena, setArena] = useState<MapArena | null>(null);
+  const [influenceRevision, setInfluenceRevision] = useState(0);
+
+  useEffect(() => activityRepository.subscribe(() => setInfluenceRevision((revision) => revision + 1)), []);
 
   useEffect(() => { void getPlayerLocation().then((result) => {
     setCoordinate(result.coordinate);
@@ -35,7 +39,15 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
     setLoading(false);
   }); }, []);
 
-  const territories = useMemo(() => generateTerritories(coordinate), [coordinate]);
+  const territories = useMemo(() => {
+    // The revision makes repository writes visible without coupling map generation
+    // to a particular persistence implementation.
+    void influenceRevision;
+    return generateTerritories(coordinate).map((territory) => ({
+      ...territory,
+      playerInfluence: territory.playerInfluence + activityRepository.influenceFor(territory.id),
+    }));
+  }, [coordinate, influenceRevision]);
   const arenas = useMemo(() => generateArenas(coordinate), [coordinate]);
   const selectTerritory = (selected: MapTerritory) => {
     setArena(null);
