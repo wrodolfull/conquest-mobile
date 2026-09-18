@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 // Installed by Expo in normal development; the execution sandbox may not cache native packages.
 // eslint-disable-next-line import/no-unresolved
@@ -14,14 +14,17 @@ import { territoryVisual } from './mapVisuals';
 import { TerritoryCard } from './TerritoryCard';
 
 export function ConquestMap() {
+  const mapRef = useRef<MapView>(null);
   const [coordinate, setCoordinate] = useState<LatLng>(FALLBACK_LOCATION);
   const [loading, setLoading] = useState(true);
+  const [usingFallback, setUsingFallback] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [territory, setTerritory] = useState<MapTerritory | null>(null);
   const [arena, setArena] = useState<MapArena | null>(null);
 
   useEffect(() => { void getPlayerLocation().then((result) => {
     setCoordinate(result.coordinate);
+    setUsingFallback(result.isFallback);
     if (result.permissionDenied) setMessage('Enable location to play with real territories around you. Showing a mock area for now.');
     else if (result.isFallback) setMessage('Location is temporarily unavailable. Showing a mock area for now.');
     setLoading(false);
@@ -31,6 +34,13 @@ export function ConquestMap() {
   const arenas = useMemo(() => generateArenas(coordinate), [coordinate]);
   const selectTerritory = (selected: MapTerritory) => { setArena(null); setTerritory(selected); };
   const selectArena = (selected: MapArena) => { setTerritory(null); setArena(selected); };
+  const centerOnPlayer = () => {
+    mapRef.current?.animateToRegion({
+      ...coordinate,
+      latitudeDelta: 0.013,
+      longitudeDelta: 0.013,
+    }, 450);
+  };
 
   return <View style={styles.container}>
     <MapView
@@ -38,6 +48,7 @@ export function ConquestMap() {
       initialRegion={{ ...coordinate, latitudeDelta: 0.013, longitudeDelta: 0.013 }}
       key={`${coordinate.latitude}:${coordinate.longitude}`}
       mapType="standard"
+      ref={mapRef}
       showsMyLocationButton={false}
       showsUserLocation={false}
       style={StyleSheet.absoluteFill}
@@ -53,7 +64,10 @@ export function ConquestMap() {
     </MapView>
     {loading && <View style={styles.loading}><ActivityIndicator color={colors.lime} /><Text style={styles.loadingText}>LOCATING PLAYER…</Text></View>}
     {message && <Pressable accessibilityRole="button" onPress={() => setMessage(null)} style={styles.notice}><Ionicons name="location-outline" color={colors.gold} size={16} /><Text style={styles.noticeText}>{message}</Text><Ionicons name="close" color={colors.muted} size={15} /></Pressable>}
-    <View pointerEvents="none" style={styles.live}><View style={styles.liveDot} /><Text style={styles.liveText}>{loading ? 'SEARCHING' : 'LOCAL WORLD · LIVE'}</Text></View>
+    {!message && <View pointerEvents="none" style={styles.live}><View style={[styles.liveDot, usingFallback && styles.fallbackDot]} /><Text style={styles.liveText}>{loading ? 'SEARCHING' : usingFallback ? 'LOCAL MOCK WORLD' : 'LOCAL WORLD · LIVE'}</Text></View>}
+    <Pressable accessibilityLabel="Center map on player" accessibilityRole="button" onPress={centerOnPlayer} style={({ pressed }) => [styles.recenter, pressed && styles.controlPressed]}>
+      <Ionicons name="locate" color={colors.cyan} size={21} />
+    </Pressable>
     {territory && <TerritoryCard territory={territory} onClose={() => setTerritory(null)} />}
     {arena && <ArenaDetailsCard arena={arena} onClose={() => setArena(null)} />}
   </View>;
@@ -66,4 +80,7 @@ const styles = StyleSheet.create({
   loading: { position: 'absolute', top: '42%', alignSelf: 'center', borderRadius: 14, backgroundColor: '#07100EEB', paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }, loadingText: { color: colors.text, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   notice: { position: 'absolute', top: 106, left: 12, right: 12, minHeight: 42, borderRadius: 13, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: '#181B14F2', borderWidth: 1, borderColor: '#6A6033', flexDirection: 'row', alignItems: 'center', gap: 8 }, noticeText: { color: '#E7E7DB', fontSize: 10, lineHeight: 14, flex: 1 },
   live: { position: 'absolute', top: 106, left: 12, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: '#07100ED9', borderWidth: 1, borderColor: '#29413A', flexDirection: 'row', alignItems: 'center', gap: 6 }, liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.cyan }, liveText: { color: colors.text, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  fallbackDot: { backgroundColor: colors.gold },
+  recenter: { position: 'absolute', right: 12, top: 158, width: 42, height: 42, borderRadius: 14, backgroundColor: '#07100EEB', borderWidth: 1, borderColor: '#315951', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 7 },
+  controlPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
 });

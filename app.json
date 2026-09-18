@@ -6,7 +6,15 @@
     "orientation": "portrait",
     "scheme": "conquest",
     "userInterfaceStyle": "dark",
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow CONQUEST to use your location to place you in the game world and discover nearby territories."
+        }
+      ]
+    ],
     "experiments": { "typedRoutes": true },
     "ios": {
       "supportsTablet": true,
