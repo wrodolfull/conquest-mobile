@@ -45,11 +45,6 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyDuHcmZVy83kwaiMz5naoksJq6bNum3JWc"
-       }
-      },
       "adaptiveIcon": {
         "backgroundColor": "#07100E"
       },
