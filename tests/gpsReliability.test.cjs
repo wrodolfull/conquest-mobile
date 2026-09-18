@@ -65,3 +65,44 @@ test('startup instability does not produce game distance', () => {
   state = processPoint(state, point(0, 5_000, 10)).state;
   assert.equal(state.phase, 'acquiring'); assert.equal(routeDistanceMeters(state.accepted), 0);
 });
+
+test('realistic 30-35m startup fixes become tracking', () => {
+  let state = createTrackingState('walking');
+  for (const sample of [point(0, 1_000, 35), point(2, 3_000, 33), point(4, 5_000, 30)]) state = processPoint(state, sample).state;
+  assert.equal(state.phase, 'tracking');
+  assert.equal(state.accepted.length, 1);
+  assert.equal(routeDistanceMeters(state.accepted), 0);
+});
+
+test('60m startup fixes remain acquiring', () => {
+  let state = createTrackingState('walking');
+  for (const sample of [point(0, 1_000, 60), point(1, 3_000, 65), point(2, 5_000, 70)]) state = processPoint(state, sample).state;
+  assert.equal(state.phase, 'acquiring');
+  assert.equal(state.accepted.length, 0);
+});
+
+test('rolling startup window tolerates an intervening poor fix', () => {
+  let state = createTrackingState('walking');
+  for (const sample of [point(0, 1_000, 32), point(1, 2_000, 70), point(2, 3_000, 34), point(3, 4_000, 31), point(4, 5_000, 30)]) state = processPoint(state, sample).state;
+  assert.equal(state.phase, 'tracking');
+  assert.equal(state.accepted.length, 1);
+});
+
+test('stabilized anchor does not connect acquisition displacement', () => {
+  let state = createTrackingState('running');
+  for (const sample of [point(-100, 1_000, 80), point(0, 3_000, 30), point(10, 5_000, 30), point(20, 7_000, 30)]) state = processPoint(state, sample).state;
+  assert.equal(state.phase, 'tracking');
+  assert.equal(routeDistanceMeters(state.accepted), 0);
+  state = processPoint(state, point(40, 10_000, 20)).state;
+  assert.ok(routeDistanceMeters(state.accepted) > 18);
+  assert.ok(routeDistanceMeters(state.accepted) < 22);
+});
+
+test('duplicate startup fix cannot add distance', () => {
+  let state = createTrackingState('walking');
+  for (const sample of [point(0, 1_000, 30), point(1, 3_000, 30), point(2, 5_000, 30)]) state = processPoint(state, sample).state;
+  const before = routeDistanceMeters(state.accepted);
+  state = processPoint(state, point(2, 5_000, 30)).state;
+  assert.equal(routeDistanceMeters(state.accepted), before);
+  assert.equal(state.rejected.at(-1).timestamp, 5_000);
+});

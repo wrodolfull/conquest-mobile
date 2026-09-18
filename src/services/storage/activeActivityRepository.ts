@@ -12,9 +12,15 @@ export interface ActiveActivitySession {
   status: ActiveActivityStatus;
   phase: TrackingEngineState['phase'];
   distanceMeters: number;
+  nativeTrackingStartedAt?: number;
   lastAcceptedPoint?: ActivityPoint;
 }
 export interface StoredActivityPoint extends ActivityPoint { id: number; accepted: boolean; provisional: boolean; reason: PointReason }
+export interface TrackingDiagnostics {
+  nativeTrackingStartedAt?: number; firstRawFixAt?: number; firstUsableFixAt?: number; gpsReadyAt?: number;
+  rawFixCount: number; usableStartupFixCount: number; latestAccuracy?: number; latestReason?: PointReason;
+  timeToFirstRawFixMs?: number; timeToFirstUsableFixMs?: number; timeToGpsReadyMs?: number;
+}
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | undefined;
 async function database() {
@@ -32,12 +38,14 @@ async function database() {
         UNIQUE(session_id, timestamp, latitude, longitude)
       );
       CREATE INDEX IF NOT EXISTS activity_points_session_time ON activity_points(session_id, timestamp);`);
+    const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(active_activity_sessions)');
+    if (!columns.some(({ name }) => name === 'native_tracking_started_at')) await db.execAsync('ALTER TABLE active_activity_sessions ADD COLUMN native_tracking_started_at INTEGER;');
     return db;
   });
   return databasePromise;
 }
 
-interface SessionRow { id: string; type: OutdoorActivityType; started_at: number; updated_at: number; status: ActiveActivityStatus; phase: TrackingEngineState['phase']; distance_meters: number }
+interface SessionRow { id: string; type: OutdoorActivityType; started_at: number; updated_at: number; status: ActiveActivityStatus; phase: TrackingEngineState['phase']; distance_meters: number; native_tracking_started_at: number | null }
 interface PointRow { id: number; latitude: number; longitude: number; timestamp: number; accuracy: number | null; altitude: number | null; speed: number | null; heading: number | null; break_before: number; accepted: number; provisional: number; reason: PointReason }
 const pointFromRow = (row: PointRow): StoredActivityPoint => ({ id: row.id, latitude: row.latitude, longitude: row.longitude, timestamp: row.timestamp, accuracy: row.accuracy ?? undefined, altitude: row.altitude ?? undefined, speed: row.speed ?? undefined, heading: row.heading ?? undefined, breakBefore: Boolean(row.break_before), accepted: Boolean(row.accepted), provisional: Boolean(row.provisional), reason: row.reason });
 
@@ -56,11 +64,12 @@ export const activeActivityRepository = {
   async get(): Promise<ActiveActivitySession | undefined> {
     const db = await database(); const row = await db.getFirstAsync<SessionRow>('SELECT * FROM active_activity_sessions ORDER BY started_at DESC LIMIT 1'); if (!row) return undefined;
     const last = await db.getFirstAsync<PointRow>('SELECT id, latitude, longitude, timestamp, accuracy, altitude, speed, heading, break_before, accepted, provisional, reason FROM activity_points WHERE session_id = ? AND accepted = 1 ORDER BY timestamp DESC, id DESC LIMIT 1', row.id);
-    return { id: row.id, type: row.type, startedAt: row.started_at, updatedAt: row.updated_at, status: row.status, phase: row.phase, distanceMeters: row.distance_meters, lastAcceptedPoint: last ? pointFromRow(last) : undefined };
+    return { id: row.id, type: row.type, startedAt: row.started_at, updatedAt: row.updated_at, status: row.status, phase: row.phase, distanceMeters: row.distance_meters, nativeTrackingStartedAt: row.native_tracking_started_at ?? undefined, lastAcceptedPoint: last ? pointFromRow(last) : undefined };
   },
   async update(session: Pick<ActiveActivitySession, 'id' | 'phase' | 'distanceMeters'>) { const db = await database(); await db.runAsync('UPDATE active_activity_sessions SET updated_at = ?, phase = ?, distance_meters = ? WHERE id = ?', Date.now(), session.phase, session.distanceMeters, session.id); },
   async markInterrupted(id: string) { const db = await database(); await db.runAsync("UPDATE active_activity_sessions SET status = 'interrupted' WHERE id = ?", id); },
   async markActive(id: string) { const db = await database(); await db.runAsync("UPDATE active_activity_sessions SET status = 'active', updated_at = ? WHERE id = ?", Date.now(), id); },
+  async markNativeTrackingStarted(id: string, timestamp: number) { const db = await database(); await db.runAsync('UPDATE active_activity_sessions SET native_tracking_started_at = ?, updated_at = ? WHERE id = ?', timestamp, timestamp, id); },
   async remove(id: string) { await activityPointRepository.removeAll(id); const db = await database(); await db.runAsync('DELETE FROM active_activity_sessions WHERE id = ?', id); },
 };
 
@@ -71,4 +80,26 @@ export async function loadTrackingState(session: ActiveActivitySession): Promise
   let state = createTrackingState(session.type);
   for (const point of points) state = processPoint(state, point).state;
   return state;
+}
+
+export async function loadTrackingDiagnostics(session: ActiveActivitySession): Promise<TrackingDiagnostics> {
+  const points = await activityPointRepository.list(session.id);
+  const usable = points.filter((point) => (point.accuracy ?? Number.POSITIVE_INFINITY) <= 35);
+  const ready = points.find((point) => point.accepted);
+  const startupPoints = ready ? points.slice(0, points.indexOf(ready) + 1) : points.slice(-5);
+  const start = session.nativeTrackingStartedAt;
+  const elapsed = (timestamp: number | undefined) => start !== undefined && timestamp !== undefined ? Math.max(0, timestamp - start) : undefined;
+  return {
+    nativeTrackingStartedAt: start,
+    firstRawFixAt: points[0]?.timestamp,
+    firstUsableFixAt: usable[0]?.timestamp,
+    gpsReadyAt: ready?.timestamp,
+    rawFixCount: points.length,
+    usableStartupFixCount: startupPoints.slice(-5).filter((point) => (point.accuracy ?? Number.POSITIVE_INFINITY) <= 35).length,
+    latestAccuracy: points.at(-1)?.accuracy,
+    latestReason: points.at(-1)?.reason,
+    timeToFirstRawFixMs: elapsed(points[0]?.timestamp),
+    timeToFirstUsableFixMs: elapsed(usable[0]?.timestamp),
+    timeToGpsReadyMs: elapsed(ready?.timestamp),
+  };
 }

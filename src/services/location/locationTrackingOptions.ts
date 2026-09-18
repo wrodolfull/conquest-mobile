@@ -10,8 +10,6 @@ export const LOCATION_OPTIONS: Location.LocationTaskOptions = {
   accuracy: Location.Accuracy.BestForNavigation,
   distanceInterval: 3,
   timeInterval: 1_000,
-  deferredUpdatesDistance: 10,
-  deferredUpdatesInterval: 5_000,
   pausesUpdatesAutomatically: false,
   activityType: Location.ActivityType.Fitness,
   showsBackgroundLocationIndicator: true,
