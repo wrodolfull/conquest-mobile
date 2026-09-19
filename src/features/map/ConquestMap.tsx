@@ -2,14 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polygon, type LatLng } from 'react-native-maps';
-import { generateTerritories } from '@/features/territories/territoryGenerator';
+import { renderableTerritories, territoryCandidatesForLocation } from '@/features/territories/territoryMapData';
 import type { MapTerritory } from '@/features/territories/types';
 import { FALLBACK_LOCATION } from '@/services/location/locationService';
 import { usePois } from '@/features/poi/PoiContext';
 import { colors } from '@/theme';
 import { activityRepository } from '@/services/storage/activityRepository';
 import { territoryRepository, type TerritorySnapshot } from '@/services/backend/territoryRepository';
-import { geometryRings } from '@/features/territories/geometry';
 import { useAuth } from '@/features/auth/AuthContext';
 import { PoiIntelCard } from './PoiIntelCard';
 import { conquestMapStyle } from './mapStyle';
@@ -45,13 +44,24 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
     mapRef.current?.animateToRegion({ ...location, latitudeDelta: 0.013, longitudeDelta: 0.013 }, 350);
   }, [location, locationReady]);
 
-  const localTerritories = useMemo(() => generateTerritories(coordinate), [coordinate]);
-  useEffect(() => { if (!user || locationDenied) return; let active = true; void territoryRepository.getSnapshot(localTerritories.map(({ id }) => id)).then((rows) => { if (active) setSnapshot(new Map(rows.map((row) => [row.territory_id, row]))); }); return () => { active = false; }; }, [localTerritories, locationDenied, user]);
+  const localTerritories = useMemo(
+    () => territoryCandidatesForLocation(location, locationDenied),
+    [location, locationDenied],
+  );
+  useEffect(() => {
+    if (!user || !localTerritories.length) return;
+
+    let active = true;
+    void territoryRepository.getSnapshot(localTerritories.map(({ id }) => id)).then((rows) => {
+      if (active) setSnapshot(new Map(rows.map((row) => [row.territory_id, row])));
+    });
+    return () => { active = false; };
+  }, [localTerritories, user]);
   const territories = useMemo(() => {
     // The revision makes repository writes visible without coupling map generation
     // to a particular persistence implementation.
     void influenceRevision;
-    return localTerritories.map((territory) => { const remote = snapshot.get(territory.id); const ring = remote ? geometryRings(remote.geometry)[0] : undefined; return remote ? { ...territory, name: remote.name, ownerUserId: remote.owner_user_id, ownerDisplayName: remote.owner_display_name, ownerInfluencePoints: remote.owner_influence_points, totalInfluencePoints: remote.total_influence_points, myInfluencePoints: remote.my_influence_points, controlPercentage: remote.control_percentage, status: remote.status, boundary: ring?.length ? ring : territory.boundary } : territory; });
+    return renderableTerritories(localTerritories, snapshot);
   }, [localTerritories, influenceRevision, snapshot]);
   const selectTerritory = (selected: MapTerritory) => {
     setSelectedPoiId(null);
