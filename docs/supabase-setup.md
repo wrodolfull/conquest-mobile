@@ -93,3 +93,18 @@ npm test
 ```
 
 Use separate users/JWTs to test RLS. Force invalid impact data and confirm the transaction leaves no activity, influence, ledger, or progression partial write.
+
+## PLAYER IDENTITY V1
+
+The `202609190001_player_identity_v1.sql` migration is additive and intentionally leaves every existing profile with `onboarding_completed = false`, so existing test accounts experience player creation once. It backfills a conservative privacy row for each profile and does not reset authentication, progression, activities, routes, influence, or territories.
+
+### Apply and verify in Supabase Web
+
+1. Open **SQL Editor**, paste the new migration, and choose **Run** once (or apply it with `supabase db push`). Review the resulting `profiles` columns, `profile_privacy`, and `friendships` tables in **Table Editor**.
+2. Open **Storage → Buckets** and verify the migration created the public `avatars` bucket with a 5 MB limit and JPEG, PNG, and WebP MIME allow-list. Public reads are intentional because an avatar is minimum game identity. In **Storage → Policies → objects**, verify insert/update/delete require bucket `avatars` and the first path segment to equal `auth.uid()` (for example `<user-id>/avatar.jpg`).
+3. In **Database → Functions**, verify authenticated execution and no anon execution for `complete_player_onboarding`, `update_player_profile`, `is_username_available`, `get_player_profile`, `search_players`, and the four friendship functions. The onboarding function derives identity only from `auth.uid()` and commits profile/privacy/completion atomically.
+4. In **Authentication → Policies**, verify raw `profiles` and `profile_privacy` SELECT/UPDATE remain owner-only and `friendships` has no direct client privileges. Safe cross-player reads must use the definer RPCs.
+5. Test with accounts A and B: complete onboarding with unique names; confirm a simultaneous duplicate username loses cleanly; search by three or more username/display-name characters; test public, friends, and private visibility; accept and block relationships; verify hidden stats return `NULL`.
+6. As account B, attempt direct updates to A's profile/privacy and an upload under `A_UUID/avatar.jpg`; all must fail. Inspect the profile/search RPC response shapes and confirm they contain no email, auth metadata, activity rows, geometry, or exact route.
+
+Avatar bytes can already be stored securely by the backend, and Google avatar URLs are retained. The current JavaScript dependency set has no media-library picker. Adding local gallery selection later requires the Expo-compatible `expo-image-picker` native package and a fresh Development Build; no heavy image-processing dependency was added solely for cosmetics.
