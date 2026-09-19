@@ -33,9 +33,6 @@ export function renderableTerritories(
     if (!snapshot) return [];
 
     const authoritativeRing = geometryRings(snapshot.geometry)[0];
-    // An ownerless snapshot is neutral even if stale cached data contains a
-    // contradictory status. This also keeps map styling safe at the data edge.
-    const status = snapshot.owner_user_id === null ? 'neutral' : snapshot.status;
     return [{
       ...candidate,
       name: snapshot.name,
@@ -45,7 +42,7 @@ export function renderableTerritories(
       totalInfluencePoints: snapshot.total_influence_points,
       myInfluencePoints: snapshot.my_influence_points,
       controlPercentage: snapshot.control_percentage,
-      status,
+      status: snapshot.status,
       boundary: authoritativeRing?.length ? authoritativeRing : candidate.boundary,
     }];
   });

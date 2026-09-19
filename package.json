@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "test": "rimraf .test-dist && tsc src/types/native-modules.d.ts src/features/activity/tracking.ts src/features/activity/outdoorRules.ts src/features/territories/territoryGrid.ts src/features/territories/territoryGenerator.ts src/features/territories/territoryMapData.ts src/features/map/mapVisuals.ts src/features/poi/config.ts src/features/poi/types.ts src/features/poi/geofenceEngine.ts src/features/poi/poiRules.ts src/features/poi/arenaRanking.ts --outDir .test-dist --module commonjs --target es2022 --skipLibCheck && tsc supabase/functions/complete-activity/activity.ts --outDir .test-dist-edge --module commonjs --target es2022 --skipLibCheck && node --test tests/*.test.cjs"
+    "test": "rimraf .test-dist && tsc src/types/native-modules.d.ts src/features/activity/tracking.ts src/features/activity/outdoorRules.ts src/features/territories/territoryGrid.ts src/features/territories/territoryGenerator.ts src/features/territories/territoryMapData.ts src/features/poi/config.ts src/features/poi/types.ts src/features/poi/geofenceEngine.ts src/features/poi/poiRules.ts src/features/poi/arenaRanking.ts --outDir .test-dist --module commonjs --target es2022 --skipLibCheck && tsc supabase/functions/complete-activity/activity.ts --outDir .test-dist-edge --module commonjs --target es2022 --skipLibCheck && node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

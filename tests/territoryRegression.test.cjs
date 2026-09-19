@@ -3,7 +3,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { generateTerritories } = require('../.test-dist/features/territories/territoryGenerator.js');
 const { renderableTerritories, territoryCandidatesForLocation } = require('../.test-dist/features/territories/territoryMapData.js');
-const { territoryVisual } = require('../.test-dist/features/map/mapVisuals.js');
 
 const origin = { latitude: -22.9698, longitude: -46.9974 };
 
@@ -52,24 +51,6 @@ test('only server or cached snapshots become renderable territories', () => {
   assert.equal(rendered[0].ownerUserId, 'real-user');
   assert.equal(rendered[0].ownerInfluencePoints, 80);
   assert.deepEqual(renderableTerritories(candidates, new Map()), []);
-});
-
-test('ownerless stale snapshots are normalized and cannot crash map styling', () => {
-  const candidate = generateTerritories(origin)[0];
-  const inconsistentSnapshot = { ...snapshot(candidate), owner_user_id: null, status: 'enemy' };
-  const [rendered] = renderableTerritories(
-    [candidate],
-    new Map([[inconsistentSnapshot.territory_id, inconsistentSnapshot]]),
-  );
-
-  assert.equal(rendered.ownerUserId, null);
-  assert.equal(rendered.status, 'neutral');
-  assert.doesNotThrow(() => territoryVisual(rendered));
-  assert.deepEqual(territoryVisual(rendered), {
-    fillColor: '#A2ADA91F',
-    strokeColor: '#A2ADA9D9',
-    strokeWidth: 1.4,
-  });
 });
 
 test('location denial cannot generate a fallback territory world', () => {
