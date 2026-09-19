@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { IconButton } from '@/components/IconButton';
 import { ResourceCounter } from '@/components/ResourceCounter';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -14,7 +14,7 @@ export function PlayerHeader() {
     <View style={styles.header}>
       <View style={styles.topRow}>
       <View style={styles.identity}>
-        <View style={styles.avatar}><Text style={styles.avatarText}>{initial}</Text><View style={styles.level}><Text style={styles.levelText}>{level ?? '—'}</Text></View></View>
+        <View style={styles.avatar}>{profile?.avatar_url?<Image source={{uri:profile.avatar_url}} style={styles.avatarImage}/>:<Text style={styles.avatarText}>{initial}</Text>}<View style={styles.level}><Text style={styles.levelText}>{level ?? '—'}</Text></View></View>
         <View style={styles.player}>
           <Text numberOfLines={1} style={styles.name}>{name}</Text>
           <Text style={styles.welcome}>LEVEL {level ?? '—'}</Text>
@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
   identity: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9 },
   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#24372F', borderWidth: 1.5, borderColor: '#739E65', justifyContent: 'center', alignItems: 'center' },
   avatarText: { color: colors.lime, fontSize: 16, fontWeight: '900' },
+  avatarImage:{width:'100%',height:'100%',borderRadius:19},
   level: { position: 'absolute', right: -5, bottom: -4, backgroundColor: colors.lime, borderRadius: 8, minWidth: 20, height: 18, paddingHorizontal: 3, justifyContent: 'center', alignItems: 'center' },
   levelText: { fontSize: 9, fontWeight: '900', color: colors.background },
   player: { flex: 1, maxWidth: 145 }, welcome: { color: colors.muted, fontSize: 7, fontWeight: '800', letterSpacing: 1 }, name: { color: colors.text, fontSize: 16, fontWeight: '900' },
