@@ -137,3 +137,19 @@ After applying the migration with **SQL Editor** or `supabase db push`:
 Run database-backed RLS validation against a local Supabase stack or staging project with separate A, B, and unrelated C JWTs. The source tests validate migration invariants but are not a substitute for executing PostgreSQL/RLS integration tests.
 
 SOCIAL V1 adds only TypeScript/Expo Router UI and SQL; it adds no native dependency. An Android Development Build does **not** need to be rebuilt solely for this milestone. Apply the database migration before using the screen.
+
+## REAL DATA V1 — Supabase Web Dashboard
+
+1. Open **SQL Editor → New query**, paste `supabase/migrations/202609190003_real_data_v1.sql`, review it, and click **Run** once. Do not edit older applied migrations.
+2. In **Table Editor → game_pois**, confirm RLS is enabled and the only player policy is authenticated SELECT of active rows. There must be no authenticated INSERT/UPDATE/DELETE policy.
+3. Add an Arena in SQL Editor (replace the example with a real verified coordinate):
+   ```sql
+   insert into public.game_pois(type,name,location,enter_radius_meters,exit_radius_meters)
+   values ('arena','Verified Arena',extensions.st_setsrid(extensions.st_makepoint(-46.6333,-23.5505),4326),75,100);
+   ```
+4. Add a Training Ground similarly, changing `type` to `training_ground`, its real name and longitude/latitude. `ST_MakePoint` takes **longitude first**.
+5. Test as an authenticated user: `select * from get_nearby_game_pois(-23.5505,-46.6333,2000);`. Confirm inactive rows are absent and invalid/over-20-km radii return no rows.
+6. Run `select * from get_my_weekly_summary();`; compare counts and distance with accepted rows in `activities` for the authenticated user and current UTC/database week.
+7. Obtain visible territory IDs, then run `select * from get_territory_snapshot(array['territory-id']);`. Confirm owner is the highest influence row, control is owner/total, and only safe identity is returned.
+8. In **Table Editor → activities**, filter by your user ID and client activity ID. Confirm one accepted row after retrying the same activity (idempotency), then inspect `activity_territory_impacts` without exposing route data to other players.
+9. In **Authentication → Policies**, verify anonymous access is absent for these APIs and use a non-admin test account for all client checks.

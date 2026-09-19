@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { activities } from '@/mocks/game';
+import { activities } from '@/config/game';
 import { colors } from '@/theme';
 import type { ActivityType } from '@/types/game';
 

@@ -1,0 +1,26 @@
+# CONQUEST data sources
+
+Runtime data belongs to exactly one category: **STATIC**, **LOCAL DEVICE**, **SERVER**, or explicitly gated **DEV FIXTURE**. Server economy data remains authoritative; caches are last-known snapshots, never successful offline mutations.
+
+| Feature | Current source | Desired source | Authority | Offline behavior | Status |
+|---|---|---|---|---|---|
+| Player identity / profile | Supabase `profiles` | Same | SERVER | Existing context retains last loaded state | Live |
+| XP, level, energy | `player_progress` | Same | SERVER | Last loaded UI only | Live |
+| Activity catalog / navigation | `src/config/game.ts` | Same | STATIC | Fully available | Live |
+| Active GPS route / diagnostics | SQLite | Same | LOCAL DEVICE | Recording continues | Live |
+| Pending completed activity | SQLite | Same until accepted | LOCAL DEVICE | Queued; economy labelled estimated | Live |
+| Accepted completed activity | `activities` and completion response | Same | SERVER | Authoritative result persisted locally | Live |
+| Territory geography | PostGIS territories, local hex candidates | Server geometry | SERVER | Cached snapshot | Transitional |
+| Territory influence / V1 owner | `territory_influence` via safe RPC | Same | SERVER | Cached snapshot, no offline ownership writes | Live V1 |
+| Weekly progress | Accepted server activities via RPC | Same | SERVER | Last-known cache plus separately labelled pending distance | Live V1 |
+| Nearby POIs | `game_pois` via spatial RPC | Same | SERVER | Empty on failure; no generated fallback | Live V1 |
+| Arena ranking | None | Future defined Arena economy | SERVER | Honest unavailable state | Not implemented |
+| Indoor economy | DEV-only prototype | Future HealthKit/Health Connect rules | SERVER | No production award | Not implemented |
+| Inventory | None | Future economy tables/APIs | SERVER | Honest empty state | Not implemented |
+| Battles | None | Future battle service | SERVER | Honest coming-soon state | Not implemented |
+| Rankings | None | Future explicitly defined leaderboard | SERVER | Honest unavailable state | Not implemented |
+| Distance milestones | Local thresholds | Same until rewards exist | STATIC | Shows milestones, never persisted loot | Live concept |
+
+## Territory ownership V1
+
+The owner is the user with the greatest authoritative `influence_points` (UUID breaks ties deterministically). Control is `owner influence / total influence × 100`. No influence means neutral. This is a display-oriented V1 representation, **not** the final battle/capture model.

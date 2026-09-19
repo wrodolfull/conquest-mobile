@@ -25,8 +25,6 @@ test('Training Ground boosts only XP earned inside', () => {
   assert.equal(xpForMixedRoute([{ baseXp: 50, insideTrainingGround: true }, { baseXp: 50, insideTrainingGround: false }]), 110);
 });
 
-test('player score dynamically recalculates ranking', () => {
-  const competitors = [{ id: 'one', name: 'One', points: 200 }, { id: 'two', name: 'Two', points: 100 }];
-  assert.equal(buildLeaderboard(50, competitors).find((entry) => entry.isPlayer).rank, 3);
-  assert.equal(buildLeaderboard(150, competitors).find((entry) => entry.isPlayer).rank, 2);
+test('Arena leaderboard is empty until an authoritative scoring system exists', () => {
+  assert.deepEqual(buildLeaderboard(), []);
 });

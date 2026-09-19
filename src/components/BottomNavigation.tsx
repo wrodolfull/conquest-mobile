@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { navigationItems } from '@/mocks/game';
+import { navigationItems } from '@/config/game';
 import { colors } from '@/theme';
 
 export function BottomNavigation() {

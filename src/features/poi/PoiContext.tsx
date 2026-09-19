@@ -6,7 +6,7 @@ import { LOCATION_OPTIONS, fromLocation } from '@/services/location/locationTrac
 import { FALLBACK_LOCATION } from '@/services/location/locationService';
 import { POI_LOCATION_MAXIMUM_ACCURACY_METERS } from './config';
 import { isGeofenceActive, updateGeofence } from './geofenceEngine';
-import { mockPoiProvider } from './mockPoiProvider';
+import { supabasePoiProvider } from './supabasePoiProvider';
 import { distanceMeters } from './poiRules';
 import type { GamePoi, PoiPresence, PoiType } from './types';
 
@@ -66,9 +66,9 @@ export function PoiProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!location || pois.length) return;
-    void mockPoiProvider.getNearbyPois(location, 2_000).then(setPois);
-  }, [location, pois.length]);
+    if (!location || locationDenied || pois.length) return;
+    void supabasePoiProvider.getNearbyPois(location,2_000).then(setPois).catch(()=>setPois([]));
+  }, [location, locationDenied, pois.length]);
 
   useEffect(() => {
     if (!location || !pois.length) return;

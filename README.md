@@ -1,6 +1,6 @@
 # CONQUEST Mobile
 
-A visual prototype for a location-based fitness strategy game, built with React Native, Expo, TypeScript, and Expo Router. All gameplay data is mocked in this phase.
+A mobile location-based fitness strategy game built with React Native, Expo, TypeScript, Expo Router, and a server-authoritative Supabase backend.
 
 ## Run with Expo Go
 
@@ -45,9 +45,9 @@ npm ls expo-location react-native-maps
 ```
 
 The Home/Map screen asks for foreground location permission when it opens. When
-permission is allowed it centers the game world on the device; when it is denied or a
-position cannot be obtained, it deliberately displays the local mock world and a
-non-blocking explanation. Android location services must also be enabled.
+permission is allowed it centers the game world on the device. If permission is denied,
+the fallback coordinate is camera-only: playable territories, POIs, and player markers
+remain hidden behind a location-required message. Android location services must also be enabled.
 
 If Expo Go still shows an older bundle, close the project in Expo Go, stop the local
 Expo process, run `npx expo start --clear`, and scan the newly displayed QR code. Ensure
@@ -62,7 +62,7 @@ npm run lint
 
 ## Scope
 
-This version contains a responsive prototype with a real foreground-location map,
-locally generated mock territories and Arenas, and Activities, Inventory, Battles,
-Ranking, and Profile tabs. It does not include authentication, continuous/background
-GPS tracking, backend services, persistent territory ownership, or multiplayer.
+This version records durable outdoor GPS activities, synchronizes accepted results to
+Supabase, derives territory state from authoritative influence, and discovers
+CONQUEST-managed POIs. Inventory, Battles, Rankings, and the production Indoor economy
+remain intentionally unavailable rather than displaying fictional runtime data.

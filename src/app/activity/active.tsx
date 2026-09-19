@@ -9,7 +9,7 @@ import { createTrackingState, rollingGpsQuality, routeDistanceMeters, type Outdo
 import { usePois } from '@/features/poi/PoiContext';
 import { BASE_OUTDOOR_XP_PER_KILOMETER } from '@/features/poi/config';
 import { arenaPointsForTrainingPower, distanceMeters as distanceToPoi } from '@/features/poi/poiRules';
-import { activities } from '@/mocks/game';
+import { activities } from '@/config/game';
 import { arenaRepository } from '@/services/storage/arenaRepository';
 import { activityRepository } from '@/services/storage/activityRepository';
 import { activeActivityRepository, loadTrackingDiagnostics, loadTrackingState, type ActiveActivitySession, type TrackingDiagnostics } from '@/services/storage/activeActivityRepository';
@@ -20,7 +20,7 @@ import { activitySyncService } from '@/services/backend/activitySyncService';
 
 export default function ActiveActivityScreen() {
   const params = useLocalSearchParams<{ type?: string }>(); const { user } = useAuth(); const type = isActivityType(params.type) ? params.type : 'walking';
-  return type === 'indoor' ? <IndoorSession ownerUserId={user!.id} /> : <OutdoorSession type={type} ownerUserId={user!.id} />;
+  const indoorEnabled=__DEV__&&process.env.EXPO_PUBLIC_ENABLE_INDOOR_DEBUG==='true'; return type === 'indoor' ? (indoorEnabled?<IndoorSession ownerUserId={user!.id}/>:<ActivityFlowShell eyebrow="INDOOR" title="Coming soon"><Text style={styles.readyCopy}>Indoor tracking is not yet connected to an authoritative economy.</Text></ActivityFlowShell>) : <OutdoorSession type={type} ownerUserId={user!.id} />;
 }
 
 function OutdoorSession({ type, ownerUserId }: { type: OutdoorActivityType; ownerUserId: string }) {
