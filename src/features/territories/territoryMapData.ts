@@ -13,7 +13,36 @@ interface AuthoritativeTerritorySnapshot {
   total_influence_points: number;
   my_influence_points: number;
   control_percentage: number;
-  status: MapTerritory['status'];
+  status: unknown;
+}
+
+const TERRITORY_STATUSES: readonly MapTerritory['status'][] = [
+  'player',
+  'enemy',
+  'neutral',
+  'contested',
+];
+
+function isTerritoryStatus(value: unknown): value is MapTerritory['status'] {
+  return TERRITORY_STATUSES.some((status) => status === value);
+}
+
+function hasCompleteSnapshot(snapshot: AuthoritativeTerritorySnapshot): boolean {
+  const geometry = snapshot.geometry;
+  const influenceValues = [
+    snapshot.owner_influence_points,
+    snapshot.total_influence_points,
+    snapshot.my_influence_points,
+    snapshot.control_percentage,
+  ];
+  return typeof snapshot.name === 'string'
+    && (snapshot.owner_user_id === null || typeof snapshot.owner_user_id === 'string')
+    && (snapshot.owner_display_name === null || typeof snapshot.owner_display_name === 'string')
+    && influenceValues.every((value) => typeof value === 'number' && Number.isFinite(value))
+    && geometry !== null
+    && typeof geometry === 'object'
+    && (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon')
+    && Array.isArray(geometry.coordinates);
 }
 
 export function territoryCandidatesForLocation(
@@ -30,8 +59,12 @@ export function renderableTerritories(
 ): MapTerritory[] {
   return candidates.flatMap((candidate) => {
     const snapshot = snapshots.get(candidate.id);
-    if (!snapshot) return [];
+    if (!snapshot || !hasCompleteSnapshot(snapshot)) return [];
 
+    // An ownerless snapshot is neutral even if stale cached data contains a
+    // contradictory status. This also keeps map styling safe at the data edge.
+    const status = snapshot.owner_user_id === null ? 'neutral' : snapshot.status;
+    if (!isTerritoryStatus(status)) return [];
     const authoritativeRing = geometryRings(snapshot.geometry)[0];
     return [{
       ...candidate,
@@ -42,7 +75,7 @@ export function renderableTerritories(
       totalInfluencePoints: snapshot.total_influence_points,
       myInfluencePoints: snapshot.my_influence_points,
       controlPercentage: snapshot.control_percentage,
-      status: snapshot.status,
+      status,
       boundary: authoritativeRing?.length ? authoritativeRing : candidate.boundary,
     }];
   });

@@ -2,6 +2,13 @@ import type { MapTerritory } from '../territories/types';
 
 const RIVAL_PALETTE = ['#40D9FF', '#A977FF', '#FF9B4A', '#FF625B', '#4D8CFF'] as const;
 const NEUTRAL_COLOR = '#A2ADA9';
+const TERRITORY_STATUSES = ['player', 'enemy', 'neutral', 'contested'] as const;
+
+export function territoryStatusLabel(status: unknown): string {
+  return typeof status === 'string' && TERRITORY_STATUSES.some((value) => value === status)
+    ? status.toUpperCase()
+    : 'UNKNOWN';
+}
 
 export function rivalColor(ownerUserId: string): string {
   let hash = 2166136261;
