@@ -1,97 +1,26 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const { generateTerritories } = require('../.test-dist/features/territories/territoryGenerator.js');
-const { renderableTerritories, territoryCandidatesForLocation } = require('../.test-dist/features/territories/territoryMapData.js');
-const { territoryStatusLabel, territoryVisual } = require('../.test-dist/features/map/mapVisuals.js');
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');
+const {generateTerritories}=require('../.test-dist/features/territories/territoryGenerator.js');
+const {territoryCandidatesForLocation,territoryGridDebugEnabled,worldViewportForRegion}=require('../.test-dist/features/territories/territoryMapData.js');
+const {mapWorldRegion}=require('../.test-dist/features/territories/worldRegions.js');
+const {rivalColor,territoryVisual}=require('../.test-dist/features/map/mapVisuals.js');
+const origin={latitude:-22.9698,longitude:-46.9974};
+const row={region_id:'r1',owner_user_id:'user-b',owner_display_name:'Runner',geometry:{type:'MultiPolygon',coordinates:[[[[-47,-23],[-46.99,-23],[-47,-22.99],[-47,-23]]],[[[-46.9,-23],[-46.89,-23],[-46.9,-22.99],[-46.9,-23]]]]},total_influence:100,owner_influence:70,my_influence:20,control_percentage:70,territory_count:3,status:'contested'};
+test('atomic territory grid remains deterministic and internal',()=>{const a=generateTerritories(origin),b=generateTerritories(origin);assert.equal(a.length,19);assert.deepEqual(a.map(x=>x.id),b.map(x=>x.id));assert.ok(a.every(x=>x.boundary.length===6));});
+test('location denial never generates a fallback world',()=>{assert.deepEqual(territoryCandidatesForLocation(origin,true),[]);});
+test('MultiPolygon and holes remain distinct render polygons',()=>{const region=mapWorldRegion(row,'server');assert.equal(region.geometryType,'MultiPolygon');assert.equal(region.polygons.length,2);assert.equal(region.territoryCount,3);assert.equal(region.source,'server');});
+test('influence points and percentage remain separate fields',()=>{const region=mapWorldRegion(row,'server');assert.equal(region.ownerInfluencePoints,70);assert.equal(region.controlPercentage,70);assert.equal(region.myInfluencePoints,20);});
+test('current and rival colors are stable and organic edges are subtle',()=>{assert.equal(rivalColor('user-b'),rivalColor('user-b'));const rival=mapWorldRegion({...row,status:'rival',my_influence:0},'server');assert.deepEqual(territoryVisual(rival),{fillColor:`${rivalColor('user-b')}38`,strokeColor:`${rivalColor('user-b')}99`,strokeWidth:1});});
+test('DEV grid requires both development and explicit flag',()=>{assert.equal(territoryGridDebugEnabled(true,'true'),true);assert.equal(territoryGridDebugEnabled(false,'true'),false);assert.equal(territoryGridDebugEnabled(true,undefined),false);});
+test('production renderer consumes world regions, not generated atomic cells',()=>{const source=fs.readFileSync('src/features/map/ConquestMap.tsx','utf8');assert.match(source,/getWorldRegions/);assert.match(source,/debugGrid && atomicCells/);assert.doesNotMatch(source,/renderableTerritories/);});
+test('map JSX does not emit a raw space text node between conditional overlays',()=>{const source=fs.readFileSync('src/features/map/ConquestMap.tsx','utf8');assert.equal(source.split('\n').some(line=>/\/?>\}\s+\{/.test(line)),false);});
+test('empty world response creates no overlay',()=>{assert.deepEqual([].map(x=>mapWorldRegion(x,'server')),[]);});
+test('oversized viewport is rejected client-side without replacing rendered regions',()=>{assert.equal(worldViewportForRegion({...origin,latitudeDelta:.251,longitudeDelta:.1}),null);assert.equal(worldViewportForRegion({...origin,latitudeDelta:.1,longitudeDelta:.251}),null);assert.deepEqual(worldViewportForRegion({...origin,latitudeDelta:.1,longitudeDelta:.1}),{west:origin.longitude-.05,east:origin.longitude+.05,south:origin.latitude-.05,north:origin.latitude+.05});const source=fs.readFileSync('src/features/map/ConquestMap.tsx','utf8');assert.match(source,/if \(!bounds\) return/);assert.doesNotMatch(source,/if \(!bounds\).*setRegions\(\[\]\)/s);});
 
-const origin = { latitude: -22.9698, longitude: -46.9974 };
+function leaderSummary(scores){const total=scores.reduce((sum,item)=>sum+item.points,0);const top=Math.max(...scores.map(item=>item.points));const leaders=scores.filter(item=>item.points===top);return{total,top,leaderCount:leaders.length,ownerUserId:leaders.length===1?leaders[0].userId:null};}
+test('tied leaders produce one ownerless contested atomic contribution without duplicated totals',()=>{const scores=[{userId:'A',points:100},{userId:'B',points:100},{userId:'C',points:20}];const summaries=[leaderSummary(scores)];assert.deepEqual(summaries,[{total:220,top:100,leaderCount:2,ownerUserId:null}]);const mine=scores.find(item=>item.userId==='A').points;assert.equal(summaries.length,1);assert.equal(summaries.reduce((sum,item)=>sum+item.total,0),220);assert.equal(mine,100);assert.equal(summaries.length,1);assert.equal(summaries[0].ownerUserId===null?'contested':'owned','contested');});
+test('a sole highest influencer is the one owner',()=>{assert.deepEqual(leaderSummary([{userId:'A',points:101},{userId:'B',points:100}]),{total:201,top:101,leaderCount:1,ownerUserId:'A'});});
 
-test('territory candidates are callable, deterministic, and cover the radius-two grid', () => {
-  assert.equal(typeof generateTerritories, 'function');
-  const first = generateTerritories(origin);
-  const second = generateTerritories(origin);
-  assert.equal(first.length, 19);
-  assert.deepEqual(first.map(({ id }) => id), second.map(({ id }) => id));
-  assert.equal(new Set(first.map(({ id }) => id)).size, 19);
-});
-
-test('territory candidates contain neutral non-authoritative defaults', () => {
-  for (const candidate of generateTerritories(origin)) {
-    assert.equal(candidate.ownerUserId, null);
-    assert.equal(candidate.ownerDisplayName, null);
-    assert.equal(candidate.ownerInfluencePoints, 0);
-    assert.equal(candidate.totalInfluencePoints, 0);
-    assert.equal(candidate.myInfluencePoints, 0);
-    assert.equal(candidate.controlPercentage, 0);
-    assert.equal(candidate.status, 'neutral');
-  }
-});
-
-function snapshot(candidate) {
-  return {
-    territory_id: candidate.id,
-    name: 'Server territory',
-    geometry: { type: 'Polygon', coordinates: [[[-47, -23], [-46.9, -23], [-47, -22.9]]] },
-    owner_user_id: 'real-user',
-    owner_display_name: 'Real Player',
-    owner_influence_points: 80,
-    total_influence_points: 100,
-    my_influence_points: 20,
-    control_percentage: 80,
-    status: 'enemy',
-  };
-}
-
-test('only server or cached snapshots become renderable territories', () => {
-  const candidates = generateTerritories(origin);
-  const cachedOrServer = snapshot(candidates[0]);
-  const rendered = renderableTerritories(candidates, new Map([[cachedOrServer.territory_id, cachedOrServer]]));
-  assert.equal(rendered.length, 1);
-  assert.equal(rendered[0].id, candidates[0].id);
-  assert.equal(rendered[0].ownerUserId, 'real-user');
-  assert.equal(rendered[0].ownerInfluencePoints, 80);
-  assert.deepEqual(renderableTerritories(candidates, new Map()), []);
-});
-
-test('ownerless stale snapshots are normalized and cannot crash map styling', () => {
-  const candidate = generateTerritories(origin)[0];
-  const inconsistentSnapshot = { ...snapshot(candidate), owner_user_id: null, status: 'enemy' };
-  const [rendered] = renderableTerritories(
-    [candidate],
-    new Map([[inconsistentSnapshot.territory_id, inconsistentSnapshot]]),
-  );
-
-  assert.equal(rendered.ownerUserId, null);
-  assert.equal(rendered.status, 'neutral');
-  assert.doesNotThrow(() => territoryVisual(rendered));
-  assert.deepEqual(territoryVisual(rendered), {
-    fillColor: '#A2ADA91F',
-    strokeColor: '#A2ADA9D9',
-    strokeWidth: 1.4,
-  });
-});
-
-test('incomplete snapshots cannot render or crash the territory status label', () => {
-  const candidate = generateTerritories(origin)[0];
-  const incompleteSnapshot = { ...snapshot(candidate), status: undefined };
-
-  assert.deepEqual(
-    renderableTerritories([candidate], new Map([[candidate.id, incompleteSnapshot]])),
-    [],
-  );
-  assert.equal(territoryStatusLabel(undefined), 'UNKNOWN');
-  assert.equal(territoryStatusLabel(null), 'UNKNOWN');
-  assert.equal(territoryStatusLabel('contested'), 'CONTESTED');
-});
-
-test('location denial cannot generate a fallback territory world', () => {
-  assert.deepEqual(territoryCandidatesForLocation(null, true), []);
-  assert.deepEqual(territoryCandidatesForLocation(origin, true), []);
-  assert.equal(territoryCandidatesForLocation(origin, false).length, 19);
-});
-
-test('generator does not restore retired mocks or seeded ownership', () => {
-  const source = fs.readFileSync('src/features/territories/territoryGenerator.ts', 'utf8');
-  assert.doesNotMatch(source, /src\/mocks|dev\/fixtures|getTerritoryGameSeed|generateArenas/);
-});
+test('V2 SQL defines one-row leader summaries, server bounds, and safe geometry',()=>{const sql=fs.readFileSync('supabase/migrations/202609190004_territory_engine_v2.sql','utf8');for(const phrase of ['territory_scores as(','leader_summary as(','count(*)::bigint leader_count','case when count(*)=1 then (array_agg','when l.leader_count>1 then \'contested\'','extensions.st_unaryunion','extensions.st_makevalid','extensions.st_isvalid','extensions.st_multi','east-west > .25','territories_geometry_gix','territories_center_gix'])assert.ok(sql.includes(phrase),phrase);assert.doesNotMatch(sql,/dense_rank\(\)|leaders as\(/);assert.doesNotMatch(sql,/activities\.route|\bemail\b|raw GPS/i);});
+test('executable SQL regression covers tied and sole leaders',()=>{const sql=fs.readFileSync('supabase/tests/territory_engine_v2_leaders.sql','utf8');for(const phrase of ["('territory-x','00000000-0000-0000-0000-00000000000a',100)",'r.total_influence<>220','r.top_influence<>100','r.leader_count<>2','r.owner_user_id is not null',"count(*) from v2_test_leader_summary",'aggregated.cell_count<>1','aggregated.total_influence<>220','aggregated.my_influence<>100','r.total_influence<>201','r.leader_count<>1'])assert.ok(sql.includes(phrase),phrase);});
+test('world response allowlist has no route or email',()=>{assert.deepEqual(Object.keys(row).sort(),['control_percentage','geometry','my_influence','owner_display_name','owner_influence','owner_user_id','region_id','status','territory_count','total_influence']);});
+test('world cache is bounded to recent viewport entries',()=>{const source=fs.readFileSync('src/services/backend/territoryRepository.ts','utf8');assert.match(source,/ORDER BY updated_at DESC LIMIT 24/);});

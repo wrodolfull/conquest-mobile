@@ -10,7 +10,7 @@ Runtime data belongs to exactly one category: **STATIC**, **LOCAL DEVICE**, **SE
 | Active GPS route / diagnostics | SQLite | Same | LOCAL DEVICE | Recording continues | Live |
 | Pending completed activity | SQLite | Same until accepted | LOCAL DEVICE | Queued; economy labelled estimated | Live |
 | Accepted completed activity | `activities` and completion response | Same | SERVER | Authoritative result persisted locally | Live |
-| Territory geography | PostGIS territories, local hex candidates | Server geometry | SERVER | Cached snapshot | Transitional |
+| Territory geography | Viewport-limited `get_world_regions` PostGIS aggregates | Same | SERVER | SQLite last-known region cache, labelled cached | Live V2 |
 | Territory influence / V1 owner | `territory_influence` via safe RPC | Same | SERVER | Cached snapshot, no offline ownership writes | Live V1 |
 | Weekly progress | Accepted server activities via RPC | Same | SERVER | Last-known cache plus separately labelled pending distance | Live V1 |
 | Nearby POIs | `game_pois` via spatial RPC | Same | SERVER | Empty on failure; no generated fallback | Live V1 |
@@ -23,4 +23,4 @@ Runtime data belongs to exactly one category: **STATIC**, **LOCAL DEVICE**, **SE
 
 ## Territory ownership V1
 
-The owner is the user with the greatest authoritative `influence_points` (UUID breaks ties deterministically). Control is `owner influence / total influence × 100`. No influence means neutral. This is a display-oriented V1 representation, **not** the final battle/capture model.
+The owner is the sole user with the greatest authoritative `influence_points`. Equal top scores have no owner and are deterministically **contested**; database row order never breaks a tie. Control is `leading influence / total influence × 100`, while all influence fields are points. No influence means neutral and produces no world overlay. “Owner” means current influence leader, **not** battle-confirmed permanent capture.
