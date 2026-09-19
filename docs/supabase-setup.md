@@ -108,3 +108,32 @@ The `202609190001_player_identity_v1.sql` migration is additive and intentionall
 6. As account B, attempt direct updates to A's profile/privacy and an upload under `A_UUID/avatar.jpg`; all must fail. Inspect the profile/search RPC response shapes and confirm they contain no email, auth metadata, activity rows, geometry, or exact route.
 
 Avatar bytes can already be stored securely by the backend, and Google avatar URLs are retained. The current JavaScript dependency set has no media-library picker. Adding local gallery selection later requires the Expo-compatible `expo-image-picker` native package and a fresh Development Build; no heavy image-processing dependency was added solely for cosmetics.
+
+## SOCIAL V1
+
+`202609190002_social_v1.sql` extends the existing `friendships` table without dropping or recreating it. It preserves the normalized unordered-pair unique index, adds lookup indexes, keeps direct friendship access revoked, and replaces the early friendship functions with caller-derived state transitions. The app never sends an actor/requester identity: every function uses `auth.uid()`.
+
+### Supabase Dashboard verification
+
+After applying the migration with **SQL Editor** or `supabase db push`:
+
+1. In **Table Editor → friendships**, verify `pending`, `accepted`, and `blocked` remain the allowed statuses and the self-pair check remains. Existing rows must still be present.
+2. In **Database → Indexes**, verify `friendships_pair_unique`, `friendships_pending_addressee_idx`, and `friendships_status_participants_idx`. The pair index must use `least(requester_id, addressee_id)` and `greatest(...)`, preventing A→B and B→A duplicates.
+3. In **Authentication → Policies**, verify RLS is enabled on `friendships`. In **Database → Roles/Privileges**, verify `anon` and `authenticated` have no direct table privileges; social reads and mutations are RPC-only.
+4. In **Database → Functions**, verify authenticated-only execution for `send_friend_request`, `accept_friend_request`, `decline_friend_request`, `cancel_friend_request`, `remove_friend`, `block_player`, `unblock_player`, `get_relationship`, `search_players`, `get_my_social_list`, `get_my_social_counts`, `get_blocked_players`, and `get_player_profile`.
+5. Confirm the search function returns at most 20 rows, rejects queries shorter than three characters, searches only username/display name, omits blocked pairs, and exposes no email, phone, OAuth metadata, activities, coordinates, or routes.
+6. Confirm `get_player_profile` leaves username/display name/avatar as minimum identity, requires an accepted friendship for friends-only fields, never treats pending as friendship, respects every field toggle, sanitizes a block created by the other user as `restricted`, and returns aggregates—not activity rows or geometry.
+7. With a JWT for Account A, try accepting a request addressed to Account B, cancelling B's outgoing request, and removing an unrelated friendship. Each must fail. Direct `insert`, `update`, `delete`, or broad `select` against `friendships` must also fail.
+
+### Exact two-account validation
+
+1. **Account A:** search Account B. Confirm B appears with only privacy-safe identity, tap **ADD**, and confirm the state becomes **REQUESTED**.
+2. **Account B:** open **Profile → Friends → Requests**. Confirm the incoming request appears, then accept it.
+3. **Account A:** reopen Friends (or foreground the app), confirm B is in the roster, open B, and confirm friends-level fields appear only according to B's visibility switches.
+4. **Account B:** change profile visibility to **PRIVATE**. **Account A:** reopen B and confirm only minimum private-profile identity remains.
+5. **Account A:** block B. Confirm the friendship is no longer active, B disappears from A's ordinary search, B cannot send a new request, and friends-level fields are no longer exposed. In the blocked-player management RPC, confirm only A's own blocks are listed; unblock B and confirm the relationship returns to none.
+6. Throughout the flow, inspect Network responses and confirm exact routes, route coordinates, start/end locations, email addresses, OAuth metadata, and precise live location never appear.
+
+Run database-backed RLS validation against a local Supabase stack or staging project with separate A, B, and unrelated C JWTs. The source tests validate migration invariants but are not a substitute for executing PostgreSQL/RLS integration tests.
+
+SOCIAL V1 adds only TypeScript/Expo Router UI and SQL; it adds no native dependency. An Android Development Build does **not** need to be rebuilt solely for this milestone. Apply the database migration before using the screen.
