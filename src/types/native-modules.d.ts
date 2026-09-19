@@ -40,10 +40,10 @@ declare module 'react-native-maps' {
   export interface LatLng { latitude: number; longitude: number }
   export interface Region extends LatLng { latitudeDelta: number; longitudeDelta: number }
   interface Camera { center?: LatLng; zoom?: number; pitch?: number; heading?: number; altitude?: number }
-  interface MapProps { children?: ReactNode; initialRegion?: Region; mapType?: string; onMapReady?: () => void; onPress?: () => void; showsUserLocation?: boolean; showsMyLocationButton?: boolean; toolbarEnabled?: boolean; style?: StyleProp<ViewStyle>; customMapStyle?: object[] }
+  interface MapProps { children?: ReactNode; initialRegion?: Region; mapType?: string; onMapReady?: () => void; onPress?: () => void; onRegionChangeComplete?: (region: Region) => void; showsUserLocation?: boolean; showsMyLocationButton?: boolean; toolbarEnabled?: boolean; style?: StyleProp<ViewStyle>; customMapStyle?: object[] }
   interface MarkerProps { children?: ReactNode; coordinate: LatLng; anchor?: { x: number; y: number }; onPress?: () => void; tracksViewChanges?: boolean; zIndex?: number; pinColor?: string; title?: string }
   interface PolylineProps { coordinates: LatLng[]; strokeColor?: string; strokeWidth?: number }
-  interface PolygonProps { coordinates: LatLng[]; fillColor?: string; strokeColor?: string; strokeWidth?: number; tappable?: boolean; onPress?: () => void }
+  interface PolygonProps { coordinates: LatLng[]; holes?: LatLng[][]; fillColor?: string; strokeColor?: string; strokeWidth?: number; tappable?: boolean; onPress?: () => void; zIndex?: number }
   interface CircleProps { center: LatLng; radius: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; zIndex?: number }
   export default class MapView extends Component<MapProps> {
     animateToRegion(region: Region, duration?: number): void;

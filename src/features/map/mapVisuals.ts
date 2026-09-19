@@ -2,7 +2,7 @@ import type { MapTerritory } from '../territories/types';
 
 const RIVAL_PALETTE = ['#40D9FF', '#A977FF', '#FF9B4A', '#FF625B', '#4D8CFF'] as const;
 const NEUTRAL_COLOR = '#A2ADA9';
-const TERRITORY_STATUSES = ['player', 'enemy', 'neutral', 'contested'] as const;
+const TERRITORY_STATUSES = ['owned', 'rival', 'neutral', 'contested'] as const;
 
 export function territoryStatusLabel(status: unknown): string {
   return typeof status === 'string' && TERRITORY_STATUSES.some((value) => value === status)
@@ -23,15 +23,15 @@ export function territoryVisual(territory: MapTerritory) {
   const neutral = territory.status === 'neutral' || territory.ownerUserId === null;
   let color = NEUTRAL_COLOR;
   if (territory.status !== 'neutral' && territory.ownerUserId !== null) {
-    color = territory.status === 'player'
+    color = territory.status === 'owned'
       ? '#BDFB46'
       : rivalColor(territory.ownerUserId);
   }
 
   const contested = !neutral && territory.status === 'contested';
   return {
-    fillColor: `${color}${neutral ? '1F' : '42'}`,
-    strokeColor: contested ? '#FFF4C7' : `${color}D9`,
-    strokeWidth: contested ? 3 : 1.4,
+    fillColor: `${color}${neutral ? '00' : '38'}`,
+    strokeColor: contested ? '#FFF4C7C0' : `${color}99`,
+    strokeWidth: contested ? 2.2 : 1,
   };
 }
