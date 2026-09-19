@@ -1,6 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
-import { tabScreenData } from '@/mocks/game';
-
-export default function RankingScreen() {
-  return <PlaceholderScreen data={tabScreenData.ranking} />;
-}
+import { UnavailableFeature } from '@/components/UnavailableFeature';
+import { colors } from '@/theme';
+export default function RankingScreen(){return <UnavailableFeature title="Ranking" description="No ranking data yet. Competitive rankings will appear after their authoritative rules are launched." icon="trophy" accent={colors.violet}/>}

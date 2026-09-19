@@ -1,35 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { weeklyProgress } from '@/mocks/game';
+import { WEEKLY_DISTANCE_GOAL_KM } from '@/config/game';
+import { useAuth } from '@/features/auth/AuthContext';
+import { weeklySummaryRepository, type WeeklySummary } from '@/services/backend/weeklySummaryRepository';
+import { activityRepository } from '@/services/storage/activityRepository';
 import { colors } from '@/theme';
-
-export function WeeklyProgress() {
-  return (
-    <LinearGradient colors={['#13201D', '#0C1614']} style={styles.card}>
-      <View style={styles.medal}><Ionicons name="ribbon" size={18} color={colors.gold} /></View>
-      <View style={styles.progress}>
-        <View style={styles.progressHeader}>
-          <View><Text style={styles.label}>WEEKLY GOAL</Text><Text style={styles.value}>{weeklyProgress.current} <Text style={styles.total}>/ {weeklyProgress.goal} km</Text></Text></View>
-          <Text style={styles.remaining}>NEXT · {weeklyProgress.reward}</Text>
-        </View>
-        <View style={styles.bar}><LinearGradient colors={[colors.lime, colors.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.fill, { width: `${weeklyProgress.percent}%` }]} /></View>
-      </View>
-      <View style={styles.rewardIcon}><Ionicons name="gift" size={18} color={colors.violet} /></View>
-    </LinearGradient>
-  );
-}
-
-const styles = StyleSheet.create({
-  card: { minHeight: 58, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 17, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  medal: { width: 30, height: 38, borderRadius: 10, backgroundColor: '#F8C14C12', alignItems: 'center', justifyContent: 'center' },
-  progress: { flex: 1 },
-  progressHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  label: { color: colors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  value: { color: colors.text, fontSize: 15, fontWeight: '900' },
-  total: { color: colors.muted, fontSize: 10 },
-  remaining: { color: colors.violet, fontSize: 7, fontWeight: '800', marginBottom: 2 },
-  bar: { height: 5, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden', marginTop: 4 },
-  fill: { height: '100%', borderRadius: 4 },
-  rewardIcon: { width: 28, height: 34, borderLeftWidth: 1, borderLeftColor: colors.border, alignItems: 'flex-end', justifyContent: 'center' },
-});
+export function WeeklyProgress(){const{user}=useAuth();const[summary,setSummary]=useState<WeeklySummary|null>();const[pending,setPending]=useState(0);useEffect(()=>{let active=true;void weeklySummaryRepository.get().then(v=>{if(active)setSummary(v)});if(user)void activityRepository.pending(user.id).then(items=>{if(active)setPending(items.reduce((n,x)=>n+x.distanceMeters,0))});return()=>{active=false}},[user]);if(summary===undefined)return <View style={styles.card}><Text style={styles.label}>WEEKLY PROGRESS · LOADING</Text></View>;const km=(summary?.outdoor_distance_meters??0)/1000;const percent=Math.min(100,km/WEEKLY_DISTANCE_GOAL_KM*100);return <View style={styles.card}><View style={styles.header}><View><Text style={styles.label}>WEEKLY DISTANCE {summary?.source==='cache'?'· LAST KNOWN':''}</Text><Text style={styles.value}>{km.toFixed(1)} <Text style={styles.total}>/ {WEEKLY_DISTANCE_GOAL_KM} km</Text></Text></View><Text style={styles.activities}>{summary?.activity_count??0} ACTIVITIES</Text></View><View style={styles.bar}><LinearGradient colors={[colors.lime,colors.cyan]} style={[styles.fill,{width:`${percent}%`}]}/></View>{pending>0?<Text style={styles.pending}>+ {(pending/1000).toFixed(1)} km pending sync</Text>:null}</View>}
+const styles=StyleSheet.create({card:{minHeight:58,padding:12,borderRadius:17,borderWidth:1,borderColor:colors.border,backgroundColor:'#0C1614'},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-end'},label:{color:colors.muted,fontSize:8,fontWeight:'900',letterSpacing:1},value:{color:colors.text,fontSize:17,fontWeight:'900',marginTop:2},total:{color:colors.muted,fontSize:10},activities:{color:colors.cyan,fontSize:8,fontWeight:'900'},bar:{height:5,borderRadius:3,backgroundColor:colors.border,overflow:'hidden',marginTop:6},fill:{height:'100%'},pending:{color:colors.gold,fontSize:8,fontWeight:'800',marginTop:5}});

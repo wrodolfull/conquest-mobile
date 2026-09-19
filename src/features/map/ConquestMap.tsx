@@ -38,7 +38,7 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
 
   useEffect(() => activityRepository.subscribe(() => setInfluenceRevision((revision) => revision + 1)), []);
 
-  useEffect(() => { if (locationDenied) setMessage('Enable location to play with real POIs and territories. Showing a mock area for now.'); }, [locationDenied]);
+  useEffect(() => { if (locationDenied) setMessage('Location is required to discover territories and Arenas.'); }, [locationDenied]);
   useEffect(() => {
     if (!locationReady || !location || initiallyCentered.current) return;
     initiallyCentered.current = true;
@@ -46,12 +46,12 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
   }, [location, locationReady]);
 
   const localTerritories = useMemo(() => generateTerritories(coordinate), [coordinate]);
-  useEffect(() => { if (!user) return; let active = true; void territoryRepository.getSnapshot(localTerritories.map(({ id }) => id)).then((rows) => { if (active) setSnapshot(new Map(rows.map((row) => [row.territory_id, row]))); }); return () => { active = false; }; }, [localTerritories, user]);
+  useEffect(() => { if (!user || locationDenied) return; let active = true; void territoryRepository.getSnapshot(localTerritories.map(({ id }) => id)).then((rows) => { if (active) setSnapshot(new Map(rows.map((row) => [row.territory_id, row]))); }); return () => { active = false; }; }, [localTerritories, locationDenied, user]);
   const territories = useMemo(() => {
     // The revision makes repository writes visible without coupling map generation
     // to a particular persistence implementation.
     void influenceRevision;
-    return localTerritories.map((territory) => { const remote = snapshot.get(territory.id); const ring = remote ? geometryRings(remote.geometry)[0] : undefined; return { ...territory, name: remote?.name ?? territory.name, ownerId: remote?.owner_user_id ?? territory.ownerId, playerInfluence: remote?.my_influence ?? activityRepository.influenceFor(territory.id), boundary: ring?.length ? ring : territory.boundary }; });
+    return localTerritories.map((territory) => { const remote = snapshot.get(territory.id); const ring = remote ? geometryRings(remote.geometry)[0] : undefined; return remote ? { ...territory, name: remote.name, ownerUserId: remote.owner_user_id, ownerDisplayName: remote.owner_display_name, ownerInfluencePoints: remote.owner_influence_points, totalInfluencePoints: remote.total_influence_points, myInfluencePoints: remote.my_influence_points, controlPercentage: remote.control_percentage, status: remote.status, boundary: ring?.length ? ring : territory.boundary } : territory; });
   }, [localTerritories, influenceRevision, snapshot]);
   const selectTerritory = (selected: MapTerritory) => {
     setSelectedPoiId(null);
@@ -83,15 +83,15 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: C
       style={StyleSheet.absoluteFill}
       toolbarEnabled={false}
     >
-      {territories.map((cell) => <Polygon key={cell.id} coordinates={cell.boundary} onPress={() => selectTerritory(cell)} tappable {...territoryVisual(cell)} />)}
-      {presences.map(({ poi }) => <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={poi} key={poi.id} onPress={() => selectPoi(poi.id)} tracksViewChanges={false}>
+      {!usingFallback && territories.map((cell) => <Polygon key={cell.id} coordinates={cell.boundary} onPress={() => selectTerritory(cell)} tappable {...territoryVisual(cell)} />)}
+      {!usingFallback && presences.map(({ poi }) => <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={poi} key={poi.id} onPress={() => selectPoi(poi.id)} tracksViewChanges={false}>
         <View style={[styles.poiMarker, poi.type === 'training_ground' && styles.groundMarker]}><Ionicons name={poi.type === 'arena' ? 'barbell' : 'flag'} color={poi.type === 'arena' ? '#F1E9FF' : '#07100E'} size={17} /></View>
       </Marker>)}
-      <PlayerLocationMarker latitude={coordinate.latitude} longitude={coordinate.longitude} accuracy={accuracy} />
+      {!usingFallback && <PlayerLocationMarker latitude={coordinate.latitude} longitude={coordinate.longitude} accuracy={accuracy} />}
     </MapView>
     {loading && <View style={styles.loading}><ActivityIndicator color={colors.lime} /><Text style={styles.loadingText}>LOCATING PLAYER…</Text></View>}
     {message && <Pressable accessibilityRole="button" onPress={() => setMessage(null)} style={styles.notice}><Ionicons name="location-outline" color={colors.gold} size={16} /><Text style={styles.noticeText}>{message}</Text><Ionicons name="close" color={colors.muted} size={15} /></Pressable>}
-    {!message && <View pointerEvents="none" style={styles.live}><View style={[styles.liveDot, usingFallback && styles.fallbackDot]} /><Text style={styles.liveText}>{loading ? 'SEARCHING' : usingFallback ? 'LOCAL MOCK WORLD' : 'LOCAL WORLD · LIVE'}</Text></View>}
+    {!message && <View pointerEvents="none" style={styles.live}><View style={[styles.liveDot, usingFallback && styles.fallbackDot]} /><Text style={styles.liveText}>{loading ? 'SEARCHING' : usingFallback ? 'LOCATION REQUIRED' : 'LOCAL WORLD · LIVE'}</Text></View>}
     <Pressable accessibilityLabel="Center map on player" accessibilityRole="button" onPress={centerOnPlayer} style={({ pressed }) => [styles.recenter, pressed && styles.controlPressed]}>
       <Ionicons name="locate" color={colors.cyan} size={21} />
     </Pressable>
