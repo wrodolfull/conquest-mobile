@@ -24,6 +24,7 @@ export const territoryRepository = {
       const rows = parseRows(data);
       const database = await db();
       await database.runAsync('INSERT OR REPLACE INTO world_region_cache VALUES(?,?,?,?,?,?,?)', key, viewport.west, viewport.south, viewport.east, viewport.north, JSON.stringify(rows), Date.now());
+      await database.runAsync('DELETE FROM world_region_cache WHERE viewport_key NOT IN (SELECT viewport_key FROM world_region_cache ORDER BY updated_at DESC LIMIT 24)');
       return rows.map((row) => mapWorldRegion(row, 'server'));
     } catch {
       const database = await db();

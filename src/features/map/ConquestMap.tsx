@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polygon, type LatLng, type Region } from 'react-native-maps';
-import type { MapTerritory, WorldViewport } from '@/features/territories/types';
-import { territoryCandidatesForLocation, territoryGridDebugEnabled } from '@/features/territories/territoryMapData';
+import type { MapTerritory } from '@/features/territories/types';
+import { territoryCandidatesForLocation, territoryGridDebugEnabled, worldViewportForRegion } from '@/features/territories/territoryMapData';
 import { FALLBACK_LOCATION } from '@/services/location/locationService';
 import { usePois } from '@/features/poi/PoiContext';
 import { colors } from '@/theme';
@@ -17,11 +17,6 @@ import { territoryVisual } from './mapVisuals';
 import { TerritoryCard } from './TerritoryCard';
 
 interface Props { selectedTerritory: MapTerritory | null; onTerritorySelectionChange: (territory: MapTerritory | null) => void }
-const boundsFor = ({ latitude, longitude, latitudeDelta, longitudeDelta }: Region): WorldViewport => ({
-  west: longitude - longitudeDelta / 2, east: longitude + longitudeDelta / 2,
-  south: latitude - latitudeDelta / 2, north: latitude + latitudeDelta / 2,
-});
-
 export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: Props) {
   const { user } = useAuth(); const mapRef = useRef<MapView>(null); const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { location, locationReady, locationDenied, presences } = usePois();
@@ -33,7 +28,10 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: P
 
   const fetchViewport = useCallback((region: Region) => {
     if (!user || locationDenied) return;
-    const bounds = boundsFor(region); const key = Object.values(bounds).map((n) => n.toFixed(4)).join(':');
+    const bounds = worldViewportForRegion(region);
+    // Keep the current overlay while zoomed beyond the local-world RPC limit.
+    if (!bounds) return;
+    const key = Object.values(bounds).map((n) => n.toFixed(4)).join(':');
     if (key === lastRequest.current) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => { lastRequest.current = key; void territoryRepository.getWorldRegions(bounds).then(setRegions); }, 400);

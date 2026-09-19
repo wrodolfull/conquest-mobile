@@ -5,21 +5,22 @@ create index if not exists territories_center_gix on public.territories using gi
 create or replace function public.get_territory_snapshot(territory_ids text[])
 returns table(territory_id text,name text,geometry jsonb,owner_user_id uuid,owner_display_name text,owner_influence_points bigint,total_influence_points bigint,my_influence_points bigint,control_percentage double precision,status text)
 language sql stable security definer set search_path='' as $$
- with scores as(
-  select ti.territory_id,ti.user_id,ti.influence_points,
-   dense_rank()over(partition by ti.territory_id order by ti.influence_points desc) score_rank,
-   count(*)over(partition by ti.territory_id,ti.influence_points) tied,
-   sum(ti.influence_points)over(partition by ti.territory_id)::bigint total
-  from public.territory_influence ti where ti.territory_id=any(territory_ids) and ti.influence_points>0
- ), leaders as(select * from scores where score_rank=1)
+ with territory_scores as(
+  select ti.territory_id,sum(ti.influence_points)::bigint total_influence,max(ti.influence_points)::bigint top_influence
+  from public.territory_influence ti where ti.territory_id=any(territory_ids) and ti.influence_points>0 group by ti.territory_id
+ ), leader_summary as(
+  select ts.territory_id,ts.total_influence,ts.top_influence,count(*)::bigint leader_count,
+   case when count(*)=1 then (array_agg(ti.user_id order by ti.user_id))[1] end owner_user_id
+  from territory_scores ts join public.territory_influence ti on ti.territory_id=ts.territory_id and ti.influence_points=ts.top_influence
+  group by ts.territory_id,ts.total_influence,ts.top_influence
+ )
  select t.id,t.name,extensions.st_asgeojson(t.geometry)::jsonb,
-  case when l.tied=1 then l.user_id end,case when l.tied=1 then p.display_name end,
-  coalesce(l.influence_points,0)::bigint,coalesce(l.total,0),coalesce(me.influence_points,0)::bigint,
-  case when coalesce(l.total,0)=0 then 0 else l.influence_points::double precision/l.total*100 end,
-  case when coalesce(l.total,0)=0 then 'neutral' when l.tied>1 then 'contested'
-   when l.user_id=(select auth.uid()) then 'owned' when coalesce(me.influence_points,0)>0 then 'contested' else 'rival' end
- from public.territories t left join leaders l on l.territory_id=t.id
- left join public.profiles p on p.id=l.user_id and l.tied=1
+  l.owner_user_id,p.display_name,coalesce(l.top_influence,0),coalesce(l.total_influence,0),coalesce(me.influence_points,0)::bigint,
+  case when coalesce(l.total_influence,0)=0 then 0 else l.top_influence::double precision/l.total_influence*100 end,
+  case when coalesce(l.total_influence,0)=0 then 'neutral' when l.leader_count>1 then 'contested'
+   when l.owner_user_id=(select auth.uid()) then 'owned' when coalesce(me.influence_points,0)>0 then 'contested' else 'rival' end
+ from public.territories t left join leader_summary l on l.territory_id=t.id
+ left join public.profiles p on p.id=l.owner_user_id
  left join public.territory_influence me on me.territory_id=t.id and me.user_id=(select auth.uid())
  where t.id=any(territory_ids);
 $$;
@@ -35,19 +36,24 @@ begin
     or east-west > .25 or north-south > .25 then raise exception 'viewport is invalid or exceeds 0.25 degrees'; end if;
  return query
  with viewport as(select extensions.st_makeenvelope(west,south,east,north,4326) box),
- scores as(
-  select ti.territory_id,ti.user_id,ti.influence_points,
-   dense_rank()over(partition by ti.territory_id order by ti.influence_points desc) score_rank,
-   count(*)over(partition by ti.territory_id,ti.influence_points) tied,
-   sum(ti.influence_points)over(partition by ti.territory_id)::bigint total
+ relevant_influence as(
+  select ti.territory_id,ti.user_id,ti.influence_points
   from public.territory_influence ti join public.territories t on t.id=ti.territory_id cross join viewport v
   where ti.influence_points>0 and t.geometry && v.box and extensions.st_intersects(t.geometry,v.box)
- ), leaders as(select * from scores where score_rank=1), atomic as(
-  select t.id,t.geometry,l.total,l.influence_points owner_points,coalesce(me.influence_points,0)::bigint mine,
-   case when l.tied=1 then l.user_id end owner_id,
-   case when l.tied>1 then 'contested' when l.user_id=(select auth.uid()) then 'owned'
+ ), territory_scores as(
+  select ri.territory_id,sum(ri.influence_points)::bigint total_influence,max(ri.influence_points)::bigint top_influence
+  from relevant_influence ri group by ri.territory_id
+ ), leader_summary as(
+  select ts.territory_id,ts.total_influence,ts.top_influence,count(*)::bigint leader_count,
+   case when count(*)=1 then (array_agg(ri.user_id order by ri.user_id))[1] end owner_user_id
+  from territory_scores ts join relevant_influence ri on ri.territory_id=ts.territory_id and ri.influence_points=ts.top_influence
+  group by ts.territory_id,ts.total_influence,ts.top_influence
+ ), atomic as(
+  select t.id,t.geometry,l.total_influence total,l.top_influence owner_points,coalesce(me.influence_points,0)::bigint mine,
+   l.owner_user_id owner_id,
+   case when l.leader_count>1 then 'contested' when l.owner_user_id=(select auth.uid()) then 'owned'
         when coalesce(me.influence_points,0)>0 then 'contested' else 'rival' end relation
-  from leaders l join public.territories t on t.id=l.territory_id
+  from leader_summary l join public.territories t on t.id=l.territory_id
   left join public.territory_influence me on me.territory_id=t.id and me.user_id=(select auth.uid())
  ), grouped as(
   select owner_id,relation,array_agg(id order by id) ids,sum(total)::bigint total,sum(owner_points)::bigint owner_points,
