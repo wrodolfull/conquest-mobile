@@ -153,3 +153,47 @@ SOCIAL V1 adds only TypeScript/Expo Router UI and SQL; it adds no native depende
 7. Obtain visible territory IDs, then run `select * from get_territory_snapshot(array['territory-id']);`. Confirm owner is the highest influence row, control is owner/total, and only safe identity is returned.
 8. In **Table Editor → activities**, filter by your user ID and client activity ID. Confirm one accepted row after retrying the same activity (idempotency), then inspect `activity_territory_impacts` without exposing route data to other players.
 9. In **Authentication → Policies**, verify anonymous access is absent for these APIs and use a non-admin test account for all client checks.
+
+## TERRITORY ENGINE V2 — Supabase Web Dashboard first
+
+Territory V2 is additive. Apply `supabase/migrations/202609190004_territory_engine_v2.sql` **after** Real Data V1. It preserves every activity, profile, friendship, atomic territory ID, influence row, and progression value.
+
+### Apply and inspect
+
+1. In **SQL Editor → New query**, paste the V2 migration, review it, and select **Run** once. Do not edit an older migration in an already provisioned project.
+2. In **Database → Functions**, inspect `get_world_regions(west, south, east, north)` and the replaced `get_territory_snapshot(territory_ids)`. Both are authenticated-only. `get_world_regions` rejects invalid boxes and boxes wider or taller than 0.25 degrees.
+3. In **Table Editor → territory_influence**, filter by a territory ID. These are authoritative integer points: 100 accepted metres produce one point. Inspect owner calculation with:
+   ```sql
+   select ti.territory_id, ti.user_id, p.display_name, ti.influence_points,
+          dense_rank() over(partition by ti.territory_id order by ti.influence_points desc) as influence_rank
+   from public.territory_influence ti join public.profiles p on p.id=ti.user_id
+   where ti.territory_id='local-Q-R' order by ti.influence_points desc;
+   ```
+   One highest scorer is the current influence-leader owner. Equal highest scores are contested and return no owner. This is not permanent battle capture.
+4. Verify geometry and indexes in SQL Editor:
+   ```sql
+   select id, extensions.st_geometrytype(geometry), extensions.st_isvalid(geometry) from public.territories limit 20;
+   select indexname, indexdef from pg_indexes where tablename='territories';
+   ```
+   Expect GiST indexes on both `geometry` and `center`.
+5. With an authenticated SQL/JWT context, test a local viewport:
+   ```sql
+   select * from public.get_world_regions(-46.66,-23.58,-46.61,-23.53);
+   ```
+   Expected fields are only `region_id`, safe owner ID/display name, Polygon/MultiPolygon `geometry`, aggregate influence values, exact control ratio, cell count, and caller-relative status. There is no email, auth metadata, GPS, friendship state, or activity route.
+6. Inspect the organic pipeline in the migration: authoritative atomic polygons are spatially filtered, collected/unary-unioned, conservatively closed with +18/-18 metre buffers in EPSG:3857, repaired, validated, topology-preserving simplified, and returned as MultiPolygon-capable GeoJSON. Metric route distance remains computed geodesically; the completion validator subdivides accepted long segments before atomic assignment rather than assigning a whole crossing segment to one midpoint.
+
+### Contested and privacy test with two users
+
+1. **Account A** completes and syncs a real outdoor activity in an untouched area. Confirm `activities`, `activity_territory_impacts`, and `territory_influence` contain one authoritative award. Home should show a soft organic green region, never production cell boundaries.
+2. **Account B** opens the same viewport. B sees A's aggregate region as a stable rival color but cannot retrieve A's activity or route. Inspect the world RPC response and verify its geometry is composed from `territories.geometry`, not `activities.route`.
+3. B completes enough accepted activity in those cells. Query influence again. Below A, B sees contested (because B contributes but does not lead); above A, B becomes the sole influence leader; exactly equal top scores return `owner_user_id = null` and `status = contested` deterministically.
+4. Compare `owner_influence / total_influence * 100` with `control_percentage`. Influence columns are points and must never be presented with `%`.
+5. As B, attempt to select A's `activities`, call any territory endpoint looking for route/email fields, and inspect owner profile results under A's privacy settings. Exact route access must fail, and no territory response may contain it.
+6. Retry A's same client activity ID and confirm no second ledger, impact, or influence award. Existing pre-V2 influence must appear without replaying old activities.
+
+If the network is unavailable, the app reads a covering last-known viewport from SQLite and labels its source `cache`; with no cache it shows only the base map. It never synthesizes neutral territory or fictional ownership. The atomic debug overlay requires both a development bundle and `EXPO_PUBLIC_ENABLE_TERRITORY_GRID_DEBUG=true`.
+
+CLI is optional: run `supabase db push`, then `supabase db lint` and database-backed RLS tests against a local stack. Source-level SQL tests do not replace executing PostGIS and RLS integration tests.
+
+Territory V2 uses existing TypeScript, SQLite, PostGIS, and `react-native-maps` dependencies. It adds no native dependency, so a new Android Development Build is **not required**.

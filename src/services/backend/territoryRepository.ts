@@ -1,7 +1,34 @@
 /* eslint-disable import/no-unresolved -- Expo/native packages resolve in the development build. */
 import * as SQLite from 'expo-sqlite';
 import { supabase } from '@/lib/supabase';
-import type { TerritoryGeometry } from '@/features/territories/geometry';
-export interface TerritorySnapshot{territory_id:string;name:string;geometry:TerritoryGeometry;owner_user_id:string|null;owner_display_name:string|null;owner_influence_points:number;total_influence_points:number;my_influence_points:number;control_percentage:number;status:'player'|'enemy'|'neutral'|'contested'}
-let dbPromise:Promise<SQLite.SQLiteDatabase>|undefined;async function db(){if(!dbPromise)dbPromise=SQLite.openDatabaseAsync('conquest-tracking.db').then(async value=>{await value.execAsync('CREATE TABLE IF NOT EXISTS territory_snapshot_cache(territory_id TEXT PRIMARY KEY NOT NULL,payload TEXT NOT NULL,updated_at INTEGER NOT NULL);');return value;});return dbPromise;}
-export const territoryRepository={async getSnapshot(ids:string[]):Promise<TerritorySnapshot[]>{if(!ids.length)return[];try{const{data,error}=await supabase.rpc('get_territory_snapshot',{territory_ids:ids});if(error)throw error;const rows=data as TerritorySnapshot[];const database=await db();await database.withTransactionAsync(async()=>{for(const row of rows)await database.runAsync('INSERT OR REPLACE INTO territory_snapshot_cache VALUES(?,?,?)',row.territory_id,JSON.stringify(row),Date.now());});return rows;}catch{const database=await db();const placeholders=ids.map(()=>'?').join(',');const rows=await database.getAllAsync<{payload:string}>(`SELECT payload FROM territory_snapshot_cache WHERE territory_id IN (${placeholders})`,...ids);return rows.map(row=>JSON.parse(row.payload) as TerritorySnapshot);}}};
+import { isWorldRegionRow, mapWorldRegion, viewportKey, type WorldRegionRow } from '@/features/territories/worldRegions';
+import type { MapTerritory, WorldViewport } from '@/features/territories/types';
+
+let dbPromise: Promise<SQLite.SQLiteDatabase> | undefined;
+async function db() {
+  if (!dbPromise) dbPromise = SQLite.openDatabaseAsync('conquest-tracking.db').then(async (value) => {
+    await value.execAsync('CREATE TABLE IF NOT EXISTS world_region_cache(viewport_key TEXT PRIMARY KEY NOT NULL,west REAL NOT NULL,south REAL NOT NULL,east REAL NOT NULL,north REAL NOT NULL,payload TEXT NOT NULL,updated_at INTEGER NOT NULL);');
+    return value;
+  });
+  return dbPromise;
+}
+
+const parseRows = (payload: unknown): WorldRegionRow[] => Array.isArray(payload) ? payload.filter(isWorldRegionRow) : [];
+
+export const territoryRepository = {
+  async getWorldRegions(viewport: WorldViewport): Promise<MapTerritory[]> {
+    const key = viewportKey(viewport);
+    try {
+      const { data, error } = await supabase.rpc('get_world_regions', viewport);
+      if (error) throw error;
+      const rows = parseRows(data);
+      const database = await db();
+      await database.runAsync('INSERT OR REPLACE INTO world_region_cache VALUES(?,?,?,?,?,?,?)', key, viewport.west, viewport.south, viewport.east, viewport.north, JSON.stringify(rows), Date.now());
+      return rows.map((row) => mapWorldRegion(row, 'server'));
+    } catch {
+      const database = await db();
+      const cached = await database.getFirstAsync<{payload:string}>('SELECT payload FROM world_region_cache WHERE west<=? AND east>=? AND south<=? AND north>=? ORDER BY updated_at DESC LIMIT 1', viewport.west, viewport.east, viewport.south, viewport.north);
+      return cached ? parseRows(JSON.parse(cached.payload)).map((row) => mapWorldRegion(row, 'cache')) : [];
+    }
+  },
+};
