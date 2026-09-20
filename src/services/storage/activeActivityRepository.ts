@@ -29,6 +29,7 @@ const notify = () => listeners.forEach((listener) => listener());
 async function database() {
   if (!databasePromise) databasePromise = SQLite.openDatabaseAsync('conquest-tracking.db').then(async (db) => {
     await db.execAsync(`PRAGMA journal_mode = WAL;
+      PRAGMA busy_timeout = 5000;
       CREATE TABLE IF NOT EXISTS active_activity_sessions (
         id TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, started_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL, status TEXT NOT NULL, phase TEXT NOT NULL, distance_meters REAL NOT NULL DEFAULT 0
@@ -64,7 +65,14 @@ export const activityPointRepository = {
 };
 
 export const activeActivityRepository = {
-  async create(type: OutdoorActivityType, ownerUserId: string, startedAt = Date.now()): Promise<ActiveActivitySession | undefined> { const db = await database(); const id = `${startedAt}-${type}`; let created=false;await db.withExclusiveTransactionAsync(async tx=>{const existing=await tx.getFirstAsync<{id:string}>('SELECT id FROM active_activity_sessions LIMIT 1');if(existing)return;await tx.runAsync("INSERT INTO active_activity_sessions (id, owner_user_id, type, started_at, updated_at, status, phase, distance_meters) VALUES (?, ?, ?, ?, ?, 'active', 'acquiring', 0)", id,ownerUserId,type,startedAt,startedAt);created=true;});if(!created)return undefined;notify();return { id, ownerUserId, type, startedAt, updatedAt: startedAt, status: 'active', phase: 'acquiring', distanceMeters: 0 }; },
+  async create(type: OutdoorActivityType, ownerUserId: string, startedAt = Date.now()): Promise<ActiveActivitySession | undefined> {
+    const db = await database(); const id = `${startedAt}-${type}`;
+    // One atomic statement preserves the singleton invariant without holding an
+    // exclusive transaction open while the native location task writes points.
+    const result = await db.runAsync("INSERT INTO active_activity_sessions (id, owner_user_id, type, started_at, updated_at, status, phase, distance_meters) SELECT ?, ?, ?, ?, ?, 'active', 'acquiring', 0 WHERE NOT EXISTS (SELECT 1 FROM active_activity_sessions)", id, ownerUserId, type, startedAt, startedAt);
+    if (result.changes !== 1) return undefined;
+    notify(); return { id, ownerUserId, type, startedAt, updatedAt: startedAt, status: 'active', phase: 'acquiring', distanceMeters: 0 };
+  },
   async get(ownerUserId?: string): Promise<ActiveActivitySession | undefined> {
     const db = await database(); const row = ownerUserId ? await db.getFirstAsync<SessionRow>('SELECT * FROM active_activity_sessions WHERE owner_user_id=? ORDER BY started_at DESC LIMIT 1',ownerUserId) : await db.getFirstAsync<SessionRow>('SELECT * FROM active_activity_sessions ORDER BY started_at DESC LIMIT 1'); if (!row) return undefined;
     const last = await db.getFirstAsync<PointRow>('SELECT id, latitude, longitude, timestamp, accuracy, altitude, speed, heading, break_before, accepted, provisional, reason FROM activity_points WHERE session_id = ? AND accepted = 1 ORDER BY timestamp DESC, id DESC LIMIT 1', row.id);
