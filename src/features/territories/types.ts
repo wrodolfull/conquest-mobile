@@ -1,4 +1,4 @@
-import type { LatLng } from 'react-native-maps';
+import type { LatLng } from '../map/mapbox/geoJsonTypes';
 
 export type TerritoryStatus = 'neutral' | 'owned' | 'contested' | 'rival';
 export type RegionSource = 'server' | 'cache';

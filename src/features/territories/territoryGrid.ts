@@ -1,4 +1,4 @@
-import type { LatLng } from 'react-native-maps';
+import type { LatLng } from '../map/mapbox/geoJsonTypes';
 
 const EARTH_RADIUS_METERS = 6_378_137;
 export const TERRITORY_RADIUS_METERS = 190;

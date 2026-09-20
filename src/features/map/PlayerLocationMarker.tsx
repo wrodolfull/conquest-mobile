@@ -1,69 +1,10 @@
+import Mapbox from '@rnmapbox/maps';
 import { StyleSheet, View } from 'react-native';
-import { Circle, Marker, type LatLng } from 'react-native-maps';
 import { colors } from '@/theme';
 
-interface PlayerLocationMarkerProps {
-  latitude: number;
-  longitude: number;
-  accuracy: number | null;
+interface Props { latitude: number; longitude: number; accuracy: number | null }
+export function PlayerLocationMarker({ latitude, longitude, accuracy }: Props) {
+  const radius = accuracy && accuracy > 0 ? Math.max(18, Math.min(42, accuracy)) : 24;
+  return <Mapbox.PointAnnotation id="conquest-player" coordinate={[longitude, latitude]}><View style={[styles.glow,{width:radius,height:radius,borderRadius:radius/2}]}><View style={styles.ring}><View style={styles.dot}/></View></View></Mapbox.PointAnnotation>;
 }
-
-export function PlayerLocationMarker({ latitude, longitude, accuracy }: PlayerLocationMarkerProps) {
-  const coordinate: LatLng = { latitude, longitude };
-  const hasAccuracy = accuracy !== null && Number.isFinite(accuracy) && accuracy > 0;
-
-  return (
-    <>
-      {hasAccuracy ? (
-        <Circle
-          center={coordinate}
-          fillColor="#37D8D124"
-          radius={accuracy}
-          strokeColor="#71F3ED88"
-          strokeWidth={1}
-          zIndex={1}
-        />
-      ) : null}
-      <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={coordinate} tracksViewChanges={false} zIndex={20}>
-        <View style={styles.glow}>
-          <View style={styles.outerRing}>
-            <View style={styles.dot} />
-          </View>
-        </View>
-      </Marker>
-    </>
-  );
-}
-
-const styles = StyleSheet.create({
-  glow: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#37D8D13D',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  outerRing: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#B9FFFC99',
-    backgroundColor: '#37D8D12B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.cyan,
-    borderWidth: 3,
-    borderColor: '#E9FFFF',
-    shadowColor: colors.cyan,
-    shadowOpacity: 0.9,
-    shadowRadius: 7,
-    elevation: 8,
-  },
-});
+const styles=StyleSheet.create({glow:{backgroundColor:'#37D8D13D',alignItems:'center',justifyContent:'center'},ring:{width:24,height:24,borderRadius:12,borderWidth:1,borderColor:'#B9FFFC99',backgroundColor:'#37D8D12B',alignItems:'center',justifyContent:'center'},dot:{width:16,height:16,borderRadius:8,backgroundColor:colors.cyan,borderWidth:3,borderColor:'#E9FFFF'}});

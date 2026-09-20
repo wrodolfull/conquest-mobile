@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "test": "rimraf .test-dist && tsc src/types/native-modules.d.ts src/features/activity/tracking.ts src/features/activity/outdoorRules.ts src/features/activity/syncContract.ts src/features/inventory/lootRules.ts src/features/territories/territoryGrid.ts src/features/territories/territoryGenerator.ts src/features/territories/territoryMapData.ts src/features/territories/worldRegions.ts src/features/map/mapVisuals.ts src/features/poi/config.ts src/features/poi/types.ts src/features/poi/geofenceEngine.ts src/features/poi/poiRules.ts src/features/poi/arenaRanking.ts --outDir .test-dist --module commonjs --target es2022 --skipLibCheck && tsc supabase/functions/complete-activity/activity.ts --outDir .test-dist-edge --module commonjs --target es2022 --skipLibCheck && node --test tests/*.test.cjs"
+    "test": "rimraf .test-dist && tsc src/types/native-modules.d.ts src/features/activity/tracking.ts src/features/activity/outdoorRules.ts src/features/activity/syncContract.ts src/features/inventory/lootRules.ts src/features/territories/territoryGrid.ts src/features/territories/territoryGenerator.ts src/features/territories/territoryMapData.ts src/features/territories/worldRegions.ts src/features/map/mapVisuals.ts src/features/map/mapbox/geoJsonTypes.ts src/features/map/mapbox/territoryGeoJson.ts src/features/map/mapbox/routeGeoJson.ts src/features/poi/config.ts src/features/poi/types.ts src/features/poi/geofenceEngine.ts src/features/poi/poiRules.ts src/features/poi/arenaRanking.ts --outDir .test-dist --module commonjs --target es2022 --skipLibCheck && tsc supabase/functions/complete-activity/activity.ts --outDir .test-dist-edge --module commonjs --target es2022 --skipLibCheck && node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -32,10 +32,10 @@
     "expo-web-browser": "~15.0.11",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-maps": "1.20.1",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0"
+    "react-native-screens": "~4.16.0",
+    "@rnmapbox/maps": "10.2.10"
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
