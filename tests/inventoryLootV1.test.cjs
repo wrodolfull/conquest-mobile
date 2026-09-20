@@ -1,5 +1,5 @@
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');
-const{pendingMilestones}=require('../.test-dist/inventory/lootRules.js');
+const{pendingMilestones}=require('../.test-dist/features/inventory/lootRules.js');
 const migration=()=>fs.readFileSync('supabase/migrations/202609190005_inventory_loot_v1.sql','utf8');
 test('distance milestones use exact cumulative V1 boundaries',()=>{const rarities=m=>pendingMilestones(m).map(x=>x.rarity);assert.deepEqual(rarities(999.99),[]);assert.deepEqual(rarities(1000),['common']);assert.deepEqual(rarities(1999.99),['common']);assert.deepEqual(rarities(2000),['common','uncommon']);assert.deepEqual(rarities(3000),['common','uncommon','rare']);assert.deepEqual(rarities(5000),['common','uncommon','rare','epic']);assert.deepEqual(rarities(10000),['common','uncommon','rare','epic','legendary']);assert.equal(rarities(25000).length,5)});
 test('catalog is production data with two active items per awarded rarity',()=>{const sql=migration();for(const rarity of ['common','uncommon','rare','epic','legendary'])assert.ok((sql.match(new RegExp(`'${rarity}','collectible'`,'g'))??[]).length>=2,rarity);assert.match(sql,/active and d\.rarity=reward\.rarity/);assert.doesNotMatch(sql,/reward\.rarity.*mythic/)});

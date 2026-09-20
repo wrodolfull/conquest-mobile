@@ -26,7 +26,7 @@ declare module 'expo-task-manager' {
 declare module 'expo-sqlite' {
   export interface SQLiteDatabase {
     execAsync(source: string): Promise<void>;
-    runAsync(source: string, ...params: (string | number | null)[]): Promise<unknown>;
+    runAsync(source: string, ...params: (string | number | null)[]): Promise<{ changes: number; lastInsertRowId: number }>;
     getFirstAsync<T>(source: string, ...params: (string | number | null)[]): Promise<T | null>;
     getAllAsync<T>(source: string, ...params: (string | number | null)[]): Promise<T[]>;
     withTransactionAsync(task: () => Promise<void>): Promise<void>;
