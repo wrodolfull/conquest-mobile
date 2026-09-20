@@ -20,6 +20,8 @@
     "@turf/along": "6.5.0",
     "@turf/distance": "6.5.0",
     "@turf/helpers": "6.5.0",
+    "@turf/length": "6.5.0",
+    "@turf/nearest-point-on-line": "6.5.0",
     "debounce": "1.2.1",
     "expo": "~54.0.37",
     "expo-auth-session": "~7.0.11",
