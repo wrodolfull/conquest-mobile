@@ -1,14 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import Mapbox from '@rnmapbox/maps';
+import { ConquestBaseMap } from '@/features/map/mapbox/ConquestBaseMap';
+import { pointFeatureCollection, routeBounds, routeFeatureCollection } from '@/features/map/mapbox/routeGeoJson';
 import { ActivityFlowShell } from '@/components/ActivityFlowShell';
 import type { CompletedOutdoorActivity } from '@/features/activity/outdoorRules';
 import { formatDuration, isActivityType } from '@/features/activity/activityRules';
 import { activityRepository, type StoredOutdoorActivity } from '@/services/storage/activityRepository';
 import { colors } from '@/theme';
 import type { CompletedIndoorActivity } from '@/features/activity/indoorRules';
-import { splitRouteAtGaps } from '@/features/activity/tracking';
 import { pendingMilestones, type AuthoritativeLootGrant } from '@/features/inventory/lootRules';
 import { rarityVisuals } from '@/features/inventory/rarityVisuals';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,30 +37,9 @@ export default function ActivityResultsScreen() {
   </ActivityFlowShell>;
 }
 function RouteMap({ route }: { route: CompletedOutdoorActivity['route'] }) {
-  const mapRef = useRef<MapView>(null);
-  const start = route[0]!;
-  const finish = route.at(-1)!;
-  const segments = splitRouteAtGaps(route);
-  const fitRoute = useCallback(() => {
-    if (route.length > 1) {
-      mapRef.current?.fitToCoordinates(route, {
-        animated: false,
-        edgePadding: { top: 42, right: 42, bottom: 42, left: 42 },
-      });
-    }
-  }, [route]);
-
-  return <MapView
-    initialRegion={{ latitude: start.latitude, longitude: start.longitude, latitudeDelta: 0.012, longitudeDelta: 0.012 }}
-    onMapReady={fitRoute}
-    ref={mapRef}
-    style={StyleSheet.absoluteFill}
-    toolbarEnabled={false}
-  >
-    {segments.filter((segment) => segment.length > 1).map((segment) => <Polyline coordinates={segment} key={`${segment[0]!.timestamp}-${segment.at(-1)!.timestamp}`} strokeColor={colors.cyan} strokeWidth={5} />)}
-    <Marker coordinate={start} pinColor={colors.lime} title="Start" />
-    <Marker coordinate={finish} pinColor={colors.cyan} title="Finish" />
-  </MapView>;
+  const camera=useRef<Mapbox.Camera>(null); const start=route[0]!; const bounds=routeBounds(route); const routeShape=routeFeatureCollection(route); const markers=pointFeatureCollection([start,route.at(-1)!]);
+  const fitRoute=useCallback(()=>{if(bounds&&route.length>1)camera.current?.fitBounds(bounds.northEast,bounds.southWest,[42,42,42,42],0)},[bounds,route.length]);
+  return <ConquestBaseMap onDidFinishLoadingMap={fitRoute}><Mapbox.Camera ref={camera} defaultSettings={{centerCoordinate:[start.longitude,start.latitude],zoomLevel:15}}/><Mapbox.ShapeSource id="private-result-route" shape={routeShape}><Mapbox.LineLayer id="private-result-route-line" style={{lineColor:colors.cyan,lineWidth:5,lineCap:'round',lineJoin:'round'}}/></Mapbox.ShapeSource><Mapbox.ShapeSource id="private-result-route-points" shape={markers}><Mapbox.CircleLayer id="private-result-route-markers" style={{circleRadius:7,circleColor:['match',['get','role'],'start',colors.lime,colors.cyan],circleStrokeColor:'#E9FFFF',circleStrokeWidth:2}}/></Mapbox.ShapeSource></ConquestBaseMap>;
 }
 function Stat({ label, value }: { label: string; value: string }) { return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>; }
 function LootCard({grant}:{grant:AuthoritativeLootGrant}){const visual=rarityVisuals[grant.rarity];return <View style={[styles.lootCard,{borderColor:visual.color,backgroundColor:visual.glow}]}><View style={[styles.lootIcon,{borderColor:visual.color}]}><Ionicons name={(grant.item.iconKey as React.ComponentProps<typeof Ionicons>['name'])??'diamond'} color={visual.color} size={25}/></View><View style={styles.grow}><Text style={[styles.lootRarity,{color:visual.color}]}>{visual.label}</Text><Text style={styles.lootName}>{grant.item.name}</Text><Text style={styles.lootDescription}>{grant.item.description}</Text><Text style={styles.lootMilestone}>Unlocked at {grant.milestoneMeters/1000} km</Text></View></View>}
