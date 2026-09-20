@@ -1,18 +1,24 @@
 # Map Engine V2 — Mapbox
 
-CONQUEST uses `@rnmapbox/maps` as its sole native game-world renderer. The runtime public token is `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN`; `EXPO_PUBLIC_MAPBOX_STYLE_URL` is optional and the built-in Mapbox dark style is the default. Never use an `sk.*` secret as either value. No Mapbox download token is configured by this repository.
+CONQUEST uses `@rnmapbox/maps` as its sole native game-world renderer. Mapbox needs two different tokens with deliberately separate lifecycles:
+
+- `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN` is the public runtime token (the `pk…` kind). It is bundled into the client and authorizes map/style requests. `EXPO_PUBLIC_MAPBOX_STYLE_URL` remains optional; the built-in Mapbox dark style is the default.
+- `RNMAPBOX_MAPS_DOWNLOAD_TOKEN` is a secret build-only token (the `sk…` kind) with **DOWNLOADS:READ** scope. The Expo plugin reads it from the build process environment so native Mapbox artifacts can be downloaded. It must never use an `EXPO_PUBLIC_` prefix, enter runtime JavaScript, or be committed.
+
+`app.config.js` explicitly selects the Mapbox implementation and passes the build secret only through `process.env.RNMAPBOX_MAPS_DOWNLOAD_TOKEN`. No token value is stored in the repository.
 
 ## EAS configuration and builds
 
-Set the public runtime token separately in the EAS **development**, **preview**, and **production** environments (and the optional style URL where desired). Then create and install a native build:
+Set both tokens separately in the EAS **development**, **preview**, and **production** environments (and the optional style URL where desired). Mark the download token as secret. For development, for example:
 
 ```bash
 eas env:create --environment development --name EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN --value '<public pk token>'
+eas env:create --environment development --name RNMAPBOX_MAPS_DOWNLOAD_TOKEN --value '<secret download token>' --visibility secret
 eas build --profile development --platform android
 eas build --profile development --platform ios
 ```
 
-Repeat the environment command with `--environment preview` and `--environment production`, then build those profiles as needed. Do not commit the value. **A NEW DEVELOPMENT BUILD IS REQUIRED. Mapbox is a native dependency and this project does not support Expo Go.** After a Mapbox development build is physically verified, the retired `GOOGLE_MAPS_API_KEY` may be removed from EAS/project build configuration; do not print, revoke, or alter that key from source control.
+Repeat both environment commands with `--environment preview` and `--environment production`, then build those profiles as needed. Do not put the build token in `.env.example`, an `EXPO_PUBLIC_*` variable, source code, or EAS configuration committed to Git. **A NEW DEVELOPMENT BUILD IS REQUIRED. Mapbox is a native dependency and this project does not support Expo Go.** After a Mapbox development build is physically verified, the retired `GOOGLE_MAPS_API_KEY` may be removed from EAS/project build configuration; do not print, revoke, or alter that key from source control.
 
 ## Architecture and privacy
 
