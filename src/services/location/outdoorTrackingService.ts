@@ -37,6 +37,7 @@ export async function startOutdoorTracking(type: OutdoorActivityType, ownerUserI
   if (existing) return { ok: false, reason: 'unresolved-session' };
   const permissionFailure = await permissionsGranted(); if (permissionFailure) return permissionFailure;
   const session = await activeActivityRepository.create(type, ownerUserId);
+  if (!session) return { ok: false, reason: 'unresolved-session' };
   if (await startNativeTracking(session.id)) { requestStartupFix(); return { ok: true, sessionId: session.id }; }
   await activeActivityRepository.remove(session.id);
   return { ok: false, reason: 'unavailable' };
