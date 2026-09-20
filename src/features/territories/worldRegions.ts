@@ -1,4 +1,4 @@
-import type { LatLng } from 'react-native-maps';
+import type { LatLng } from '../map/mapbox/geoJsonTypes';
 import type { MapTerritory, TerritoryGeometry, TerritoryStatus } from './types';
 
 export interface WorldRegionRow {

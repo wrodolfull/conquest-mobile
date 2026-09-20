@@ -1,4 +1,4 @@
-import type { LatLng } from 'react-native-maps';
+import type { LatLng } from '../map/mapbox/geoJsonTypes';
 import { generateTerritories } from './territoryGenerator';
 import type { TerritoryCell } from './territoryGrid';
 import type { WorldViewport } from './types';

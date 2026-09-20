@@ -1,4 +1,4 @@
-import type { LatLng } from 'react-native-maps';
+import type { LatLng } from '../map/mapbox/geoJsonTypes';
 import { territoryAt, territoryCell, type TerritoryCell } from './territoryGrid';
 
 const CANDIDATE_RADIUS = 2;

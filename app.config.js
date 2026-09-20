@@ -1,20 +1,4 @@
-﻿module.exports = ({ config }) => {
-  const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
-
-  return {
-    ...config,
-    android: {
-      ...config.android,
-      ...(googleMapsApiKey
-        ? {
-            config: {
-              ...(config.android?.config ?? {}),
-              googleMaps: {
-                apiKey: googleMapsApiKey,
-              },
-            },
-          }
-        : {}),
-    },
-  };
-};
+module.exports = ({ config }) => ({
+  ...config,
+  plugins: [...(config.plugins ?? []), '@rnmapbox/maps'],
+});
