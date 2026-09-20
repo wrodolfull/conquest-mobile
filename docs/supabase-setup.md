@@ -32,7 +32,7 @@ eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://YOUR_PROJECT_REF.
 eas env:create --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value sb_publishable_YOUR_KEY --environment development --visibility sensitive
 ```
 
-Never put a database password, OAuth client secret, secret/service-role key in `EXPO_PUBLIC_*`, EAS app config, or Git. Preserve the separate `GOOGLE_MAPS_API_KEY` workflow.
+Never put a database password, OAuth client secret, secret/service-role key in `EXPO_PUBLIC_*`, EAS app config, or Git. The public Mapbox runtime token belongs in `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN`; never place a secret Mapbox download token in public configuration.
 
 ## Email and Google Auth
 
@@ -196,7 +196,7 @@ If the network is unavailable, the app reads a covering last-known viewport from
 
 CLI is optional: run `supabase db push`, then `supabase db lint` and database-backed RLS tests against a local stack. Source-level SQL tests do not replace executing PostGIS and RLS integration tests.
 
-Territory V2 uses existing TypeScript, SQLite, PostGIS, and `react-native-maps` dependencies. It adds no native dependency, so a new Android Development Build is **not required**.
+Map Engine V2 renders this unchanged Territory V2 data through `@rnmapbox/maps`. The native Mapbox dependency means a **new development build is required**; Expo Go is unsupported.
 
 ## INVENTORY + LOOT V1 — Supabase Web Dashboard first
 

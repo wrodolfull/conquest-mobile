@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import type { LatLng } from 'react-native-maps';
+import type { LatLng } from '../../features/map/mapbox/geoJsonTypes';
 
 export const FALLBACK_LOCATION: LatLng = {
   latitude: -22.9698,
