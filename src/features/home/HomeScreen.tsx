@@ -11,15 +11,17 @@ import { MapErrorBoundary } from '@/features/map/MapErrorBoundary';
 import type { MapTerritory } from '@/features/territories/types';
 import { colors } from '@/theme';
 import { usePois } from '@/features/poi/PoiContext';
-import { activeActivityRepository, type ActiveActivitySession } from '@/services/storage/activeActivityRepository';
+import { useActiveActivity } from '@/features/activity/useActiveActivity';
+import { formatDuration } from '@/features/activity/activityRules';
 
 export function HomeScreen() {
   const [selectedTerritory, setSelectedTerritory] = useState<MapTerritory | null>(null);
   const controlsEntrance = useRef(new Animated.Value(1)).current;
   const { notice, dismissNotice, simulate } = usePois();
   const showPoiDebug = __DEV__ && process.env.EXPO_PUBLIC_ENABLE_POI_DEBUG === 'true';
-  const [interrupted, setInterrupted] = useState<ActiveActivitySession>();
-  useEffect(() => { const timer = setTimeout(() => { void activeActivityRepository.get().then((value) => setInterrupted(value?.status === 'interrupted' ? value : undefined)); }, 400); return () => clearTimeout(timer); }, []);
+  const active = useActiveActivity();
+  const [now,setNow]=useState(Date.now());
+  useEffect(()=>{if(!active)return;const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[active]);
 
   const handleTerritorySelectionChange = (territory: MapTerritory | null) => {
     setSelectedTerritory(territory);
@@ -50,8 +52,6 @@ export function HomeScreen() {
       </View>
       {notice ? <Pressable onPress={dismissNotice} style={styles.poiNotice}><Ionicons name="location" size={18} color={colors.lime} /><Text style={styles.poiNoticeText}>{notice}</Text><Ionicons name="close" size={16} color={colors.muted} /></Pressable> : null}
       {showPoiDebug ? <View style={styles.dev}><Text style={styles.devTitle}>DEV POI</Text>{(['arena', 'training_ground'] as const).map((type) => <View key={type} style={styles.devRow}><Text style={styles.devLabel}>{type === 'arena' ? 'Arena' : 'Park'}</Text><Pressable onPress={() => simulate(type, 'inside')}><Text style={styles.devAction}>ENTER</Text></Pressable><Pressable onPress={() => simulate(type, 'outside')}><Text style={styles.devAction}>LEAVE</Text></Pressable></View>)}</View> : null}
-      {interrupted ? <Pressable onPress={() => router.push({ pathname: '/activity/active', params: { type: interrupted.type } })} style={styles.recovery}><Ionicons name="warning" size={18} color={colors.gold} /><View style={styles.startCopy}><Text style={styles.recoveryTitle}>Previous activity was interrupted</Text><Text style={styles.recoveryCopy}>Recover, finish with recorded data, or discard.</Text></View><Ionicons name="chevron-forward" size={17} color={colors.gold} /></Pressable> : null}
-
       {selectedTerritory === null ? (
         <Animated.View
           pointerEvents="box-none"
@@ -64,17 +64,17 @@ export function HomeScreen() {
           ]}
         >
           <Pressable
-            accessibilityLabel="Start activity"
+            accessibilityLabel={active?'Activity in progress':'Start activity'}
             accessibilityRole="button"
-            onPress={() => router.push('/activity/select')}
+            onPress={() => active?router.push({pathname:'/activity/active',params:{type:active.type,sessionId:active.id}}):router.push('/activity/select')}
             style={({ pressed }) => [styles.start, pressed && styles.pressed]}
           >
             <LinearGradient colors={['#D8FF73', colors.lime]} style={styles.startIcon}>
-              <Ionicons name="play" size={21} color={colors.background} style={styles.playIcon} />
+              <Ionicons name={active?.status==='interrupted'?'warning':'play'} size={21} color={colors.background} style={styles.playIcon} />
             </LinearGradient>
             <View style={styles.startCopy}>
-              <Text style={styles.startTitle}>Start activity</Text>
-              <Text style={styles.startDetail}>Walk  •  Run  •  Cycle  •  Indoor</Text>
+              <Text style={styles.startTitle}>{active?'Activity in progress':'Start activity'}</Text>
+              <Text style={styles.startDetail}>{active?`${active.type}  •  ${(active.distanceMeters/1000).toFixed(2)} km  •  ${formatDuration(Math.max(0,Math.floor((now-active.startedAt)/1000)))}  •  Tap to return`:'Walk  •  Run  •  Cycle  •  Indoor'}</Text>
             </View>
             <Ionicons name="chevron-forward" size={19} color={colors.lime} />
           </Pressable>

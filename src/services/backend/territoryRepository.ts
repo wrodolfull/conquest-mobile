@@ -5,6 +5,7 @@ import { isWorldRegionRow, mapWorldRegion, viewportKey, type WorldRegionRow } fr
 import type { MapTerritory, WorldViewport } from '@/features/territories/types';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | undefined;
+const listeners = new Set<() => void>();
 async function db() {
   if (!dbPromise) dbPromise = SQLite.openDatabaseAsync('conquest-tracking.db').then(async (value) => {
     await value.execAsync('CREATE TABLE IF NOT EXISTS world_region_cache(viewport_key TEXT PRIMARY KEY NOT NULL,west REAL NOT NULL,south REAL NOT NULL,east REAL NOT NULL,north REAL NOT NULL,payload TEXT NOT NULL,updated_at INTEGER NOT NULL);');
@@ -16,6 +17,8 @@ async function db() {
 const parseRows = (payload: unknown): WorldRegionRow[] => Array.isArray(payload) ? payload.filter(isWorldRegionRow) : [];
 
 export const territoryRepository = {
+  invalidate() { listeners.forEach((listener) => listener()); },
+  subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
   async getWorldRegions(viewport: WorldViewport): Promise<MapTerritory[]> {
     const key = viewportKey(viewport);
     try {

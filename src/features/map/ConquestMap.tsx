@@ -7,7 +7,6 @@ import { territoryCandidatesForLocation, territoryGridDebugEnabled, worldViewpor
 import { FALLBACK_LOCATION } from '@/services/location/locationService';
 import { usePois } from '@/features/poi/PoiContext';
 import { colors } from '@/theme';
-import { activityRepository } from '@/services/storage/activityRepository';
 import { territoryRepository } from '@/services/backend/territoryRepository';
 import { useAuth } from '@/features/auth/AuthContext';
 import { PoiIntelCard } from './PoiIntelCard';
@@ -37,7 +36,7 @@ export function ConquestMap({ selectedTerritory, onTerritorySelectionChange }: P
     timer.current = setTimeout(() => { lastRequest.current = key; void territoryRepository.getWorldRegions(bounds).then(setRegions); }, 400);
   }, [locationDenied, user]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  useEffect(() => activityRepository.subscribe(() => { lastRequest.current = ''; fetchViewport({ ...coordinate, latitudeDelta: .013, longitudeDelta: .013 }); }), [coordinate, fetchViewport]);
+  useEffect(() => territoryRepository.subscribe(() => { lastRequest.current = ''; fetchViewport({ ...coordinate, latitudeDelta: .013, longitudeDelta: .013 }); }), [coordinate, fetchViewport]);
   useEffect(() => { if (locationDenied) setMessage('Location is required to discover territories and Arenas.'); }, [locationDenied]);
   useEffect(() => { if (!locationReady || !location || initiallyCentered.current) return; initiallyCentered.current = true; const region = { ...location, latitudeDelta: .013, longitudeDelta: .013 }; mapRef.current?.animateToRegion(region, 350); fetchViewport(region); }, [fetchViewport, location, locationReady]);
 
