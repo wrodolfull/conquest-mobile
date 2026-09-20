@@ -37,3 +37,7 @@ Camera-idle events drive the existing debounced viewport RPC. Oversized viewport
 5. **Screen lock:** lock, walk, and unlock; verify GPS V2 continued recording and the map redraws accepted points.
 6. **Activity result:** finish; verify the complete private route fits, start/finish show, and gaps are not connected.
 7. **Territory:** after authoritative sync, return Home and verify the influenced organic region.
+
+## JavaScript bundling dependency
+
+`@rnmapbox/maps` imports `debounce` from its JavaScript `MapView` implementation. CONQUEST therefore declares `debounce` directly rather than depending on it being hoisted transitively. After pulling this change, run `npm install` before bundling or rebuilding the development client.
