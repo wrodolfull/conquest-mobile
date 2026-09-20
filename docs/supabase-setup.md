@@ -197,3 +197,44 @@ If the network is unavailable, the app reads a covering last-known viewport from
 CLI is optional: run `supabase db push`, then `supabase db lint` and database-backed RLS tests against a local stack. Source-level SQL tests do not replace executing PostGIS and RLS integration tests.
 
 Territory V2 uses existing TypeScript, SQLite, PostGIS, and `react-native-maps` dependencies. It adds no native dependency, so a new Android Development Build is **not required**.
+
+## INVENTORY + LOOT V1 — Supabase Web Dashboard first
+
+Inventory V1 is an additive, server-authoritative collection system. **It intentionally does not backfill historical activities.** Only activities first finalized after this migration is deployed receive loot; retries of older activities return an empty loot list.
+
+### Apply the database and function changes
+
+1. In **SQL Editor → New query**, paste `supabase/migrations/202609190005_inventory_loot_v1.sql`, review it, and click **Run** once after the four earlier migrations. Never edit or replay an already-applied migration.
+2. Deploy the updated function from a terminal with `supabase functions deploy complete-activity`. The app must not be tested for new rewards until both the migration and function are deployed.
+3. In **Table Editor**, inspect `item_definitions`, `player_inventory`, and `loot_grants`. The catalog contains two production collectibles at each V1 rarity: Field Marker, Pathfinder Token, Verdant Compass, Border Sigil, Wayfinder Prism, Cartographer's Seal, Dominion Shard, Horizon Beacon, Crown of Routes, and Conqueror's Astrolabe. Descriptions are flavor only.
+4. In **Authentication → Policies**, verify `item_definitions` exposes only active rows to authenticated users and `player_inventory` exposes only `auth.uid()` rows. `loot_grants` has no client SELECT or mutation policy. In **Database → Roles/Privileges**, verify authenticated users have no INSERT/UPDATE/DELETE on any of the three tables.
+5. In **Database → Functions**, verify `get_my_inventory()` and `get_activity_loot(uuid)` are authenticated-only. The former accepts no user ID. The latter joins the activity owner to `auth.uid()`. The finalizer remains executable only by `service_role`.
+
+### Inspect and validate authoritative data
+
+Use Table Editor as an administrator, or SQL Editor with explicit filters:
+
+```sql
+select id,name,rarity,category,active from public.item_definitions order by rarity,name;
+select * from public.player_inventory where user_id='ACCOUNT_A_UUID' order by last_acquired_at desc;
+select * from public.loot_grants where user_id='ACCOUNT_A_UUID' order by created_at desc;
+```
+
+Do not expose the service-role key to the app. To test caller behavior, use the app or a REST client carrying an ordinary Account A JWT. As Account A, `rpc/get_my_inventory` must return only A. Direct attempts to insert a Legendary grant, increment `player_inventory.quantity`, deactivate/change an item definition, or insert a milestone must fail. Repeat with Account B and confirm B cannot select A's inventory; call `get_activity_loot` with A's activity ID and confirm B receives no rows.
+
+### One-kilometre, idempotency, and manual app flow
+
+1. Sign in as **Account A** and open Inventory. A new account shows **NO LOOT YET**.
+2. Complete a real accepted Walking, Running, or Cycling activity over 1 km and under 2 km. When offline, Activity Result shows **COMMON — REWARD PENDING SYNC** and no item identity.
+3. Restore connectivity and let the existing completion sync run. Activity Result must show exactly one real Common catalog item, unlocked at 1 km. Inventory must show that same item and quantity from `get_my_inventory()`.
+4. Inspect `activities` and `loot_grants`. There must be one activity and one `(activity_id, 1000)` row. Re-submit the identical `client_activity_id`; the response must contain the same grant, `loot_grants` must remain one row, and inventory quantity must not change.
+5. Complete a new outdoor activity over 3 km. Its result must contain exactly Common, Uncommon, and Rare grants at 1000, 2000, and 3000 metres. Exact server-distance boundaries are `>= 1000`, `>= 2000`, `>= 3000`, `>= 5000`, and `>= 10000`; over 10 km still produces only five grants.
+6. Complete an indoor activity and verify it creates no distance loot. Deactivate a catalog item as an administrator, complete another qualifying activity, and verify that item is not selected for a new grant while any existing owned copy remains visible through `get_my_inventory()`.
+
+For a concurrency check, submit the same authenticated completion request twice in parallel. The unique activity key and `unique(activity_id,milestone_meters)` ledger constraint are the database backstops: only one progression/influence update and one grant per crossed milestone may commit. Selection is stable server-side ordering by an MD5 of activity UUID, milestone, and candidate item ID; no client reward list or random choice is accepted.
+
+### Cache, deployment, and build impact
+
+Confirmed activity loot is added to the existing SQLite activity payload with a sync timestamp. Inventory RPC results are cached by authenticated owner in SQLite, refreshed when Inventory opens, after successful activity sync, and when the app returns to foreground after the cache becomes stale. Offline mode only reads that last-known snapshot and never mutates ownership.
+
+This milestone uses the existing TypeScript, Supabase, Edge Function, and Expo SQLite dependencies. It adds **no native dependency**, so another Android/iOS Development Build is **not required**. A JavaScript update plus the SQL migration and Edge Function deployment is sufficient.
