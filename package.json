@@ -17,6 +17,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@rnmapbox/maps": "10.2.10",
     "@supabase/supabase-js": "^2.57.4",
+    "@turf/along": "6.5.0",
     "@turf/distance": "6.5.0",
     "@turf/helpers": "6.5.0",
     "debounce": "1.2.1",
