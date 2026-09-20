@@ -40,4 +40,4 @@ Camera-idle events drive the existing debounced viewport RPC. Oversized viewport
 
 ## JavaScript bundling dependency
 
-`@rnmapbox/maps` imports `debounce` from its JavaScript `MapView` implementation. CONQUEST therefore declares `debounce` directly rather than depending on it being hoisted transitively. After pulling this change, run `npm install` before bundling or rebuilding the development client.
+`@rnmapbox/maps` imports `debounce` from its JavaScript `MapView` implementation and imports `@turf/helpers` plus `@turf/distance` from its geometry utilities. CONQUEST declares these runtime modules directly rather than depending on them being hoisted transitively. After pulling this change, run `npm install` and restart Metro with a cleared cache before bundling or rebuilding the development client.
