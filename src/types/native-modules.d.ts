@@ -38,3 +38,9 @@ declare module '@react-native-async-storage/async-storage' { const storage: { ge
 declare module '@supabase/supabase-js' { export function createClient(url:string,key:string,options?:unknown): any; }
 declare module 'expo-web-browser' { export function maybeCompleteAuthSession():void; export function openAuthSessionAsync(url:string,redirectUrl:string):Promise<{type:string;url:string}>; }
 declare module 'react-native-url-polyfill/auto';
+
+declare module 'react-native-view-shot' {
+  import type { RefObject } from 'react';
+  import type { View } from 'react-native';
+  export function captureRef(ref: RefObject<View | null>, options?: { format?: 'png' | 'jpg'; quality?: number; result?: 'tmpfile' | 'base64' | 'data-uri' }): Promise<string>;
+}
