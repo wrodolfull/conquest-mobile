@@ -56,15 +56,18 @@ export const createTrackingState = (type: OutdoorActivityType): TrackingEngineSt
 /** A route needs an anchor and a second accepted fix before it can be completed. */
 export function activityGpsState(state: Pick<TrackingEngineState, 'phase' | 'accepted'>): ActivityGpsState {
   if (state.phase === 'acquiring' || state.accepted.length === 0) return 'acquiring';
-  return state.accepted.length === 1 ? 'ready' : 'tracking';
+  return hasSyncableOutdoorRoute(state.accepted) ? 'tracking' : 'ready';
 }
 
 export function canFinishOutdoorActivity(state: Pick<TrackingEngineState, 'phase' | 'accepted'>): boolean {
-  return activityGpsState(state) === 'tracking';
+  return hasSyncableOutdoorRoute(state.accepted);
 }
 
 export function hasSyncableOutdoorRoute(points: readonly ActivityPoint[]): boolean {
-  return points.length >= 2;
+  return points.some((point, index) => {
+    if (index === 0 || point.breakBefore) return false;
+    return segmentDistanceMeters(points[index - 1]!, point) > 0;
+  });
 }
 
 export function segmentDistanceMeters(a: ActivityPoint, b: ActivityPoint): number {
