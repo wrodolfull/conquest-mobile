@@ -14,6 +14,7 @@ import { usePois } from '@/features/poi/PoiContext';
 import { useActiveActivity } from '@/features/activity/useActiveActivity';
 import { formatDuration } from '@/features/activity/activityRules';
 import { activeActivityDestination, homeActivityCtaPresentation } from '@/features/activity/activityPresentation';
+import { potentialInfluenceForDistance } from './activeActivityMapFeedback';
 
 export function HomeScreen() {
   const [selectedTerritory, setSelectedTerritory] = useState<MapTerritory | null>(null);
@@ -38,6 +39,7 @@ export function HomeScreen() {
     <View style={styles.screen}>
       <MapErrorBoundary>
         <ConquestMap
+          activeActivity={active}
           onTerritorySelectionChange={handleTerritorySelectionChange}
           selectedTerritory={selectedTerritory}
         />
@@ -77,6 +79,7 @@ export function HomeScreen() {
             <View style={styles.startCopy}>
               <View style={styles.titleRow}>{active ? <View style={styles.activeDot} /> : null}<Text style={styles.startTitle}>{activityCta.title}</Text></View>
               <Text style={styles.startDetail}>{active?`${active.type}  •  ${(active.distanceMeters/1000).toFixed(2)} km  •  ${formatDuration(Math.max(0,Math.floor((now-active.startedAt)/1000)))}  •  Tap to return`:'Walk  •  Run  •  Cycle  •  Indoor'}</Text>
+              {active ? <Text style={styles.potential}>+{potentialInfluenceForDistance(active.distanceMeters)} potential influence</Text> : null}
             </View>
             <Ionicons name="chevron-forward" size={19} color={colors.lime} />
           </Pressable>
@@ -122,4 +125,5 @@ const styles = StyleSheet.create({
   activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF9F43' },
   startTitle: { color: colors.text, fontSize: 17, lineHeight: 21, fontWeight: '900' },
   startDetail: { color: colors.muted, fontSize: 9, marginTop: 2 },
+  potential: { color: colors.lime, fontSize: 9, fontWeight: '800', marginTop: 3 },
 });

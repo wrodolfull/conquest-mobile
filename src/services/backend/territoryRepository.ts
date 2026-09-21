@@ -15,11 +15,12 @@ async function db() {
 }
 
 const parseRows = (payload: unknown): WorldRegionRow[] => Array.isArray(payload) ? payload.filter(isWorldRegionRow) : [];
+export interface WorldRegionsResult { regions: MapTerritory[]; source: 'server' | 'cache' }
 
 export const territoryRepository = {
   invalidate() { listeners.forEach((listener) => listener()); },
   subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
-  async getWorldRegions(viewport: WorldViewport): Promise<MapTerritory[]> {
+  async getWorldRegionsWithMetadata(viewport: WorldViewport): Promise<WorldRegionsResult> {
     const key = viewportKey(viewport);
     try {
       const { data, error } = await supabase.rpc('get_world_regions', viewport);
@@ -28,11 +29,14 @@ export const territoryRepository = {
       const database = await db();
       await database.runAsync('INSERT OR REPLACE INTO world_region_cache VALUES(?,?,?,?,?,?,?)', key, viewport.west, viewport.south, viewport.east, viewport.north, JSON.stringify(rows), Date.now());
       await database.runAsync('DELETE FROM world_region_cache WHERE viewport_key NOT IN (SELECT viewport_key FROM world_region_cache ORDER BY updated_at DESC LIMIT 24)');
-      return rows.map((row) => mapWorldRegion(row, 'server'));
+      return { regions: rows.map((row) => mapWorldRegion(row, 'server')), source: 'server' };
     } catch {
       const database = await db();
       const cached = await database.getFirstAsync<{payload:string}>('SELECT payload FROM world_region_cache WHERE west<=? AND east>=? AND south<=? AND north>=? ORDER BY updated_at DESC LIMIT 1', viewport.west, viewport.east, viewport.south, viewport.north);
-      return cached ? parseRows(JSON.parse(cached.payload)).map((row) => mapWorldRegion(row, 'cache')) : [];
+      return { regions: cached ? parseRows(JSON.parse(cached.payload)).map((row) => mapWorldRegion(row, 'cache')) : [], source: 'cache' };
     }
+  },
+  async getWorldRegions(viewport: WorldViewport): Promise<MapTerritory[]> {
+    return (await this.getWorldRegionsWithMetadata(viewport)).regions;
   },
 };

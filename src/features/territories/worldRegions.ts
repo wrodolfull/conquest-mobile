@@ -6,16 +6,20 @@ export interface WorldRegionRow {
   owner_user_id: string | null;
   owner_display_name: string | null;
   geometry: TerritoryGeometry;
-  total_influence: number;
-  owner_influence: number;
-  my_influence: number;
-  control_percentage: number;
-  territory_count: number;
+  total_influence: number | string;
+  owner_influence: number | string;
+  my_influence: number | string;
+  control_percentage: number | string;
+  territory_count: number | string;
   status: TerritoryStatus;
 }
 
 const statuses: readonly TerritoryStatus[] = ['neutral', 'owned', 'contested', 'rival'];
 const point = ([longitude, latitude]: [number, number]): LatLng => ({ latitude, longitude });
+const finiteNumber = (value: unknown): value is number | string =>
+  (typeof value === 'number' && Number.isFinite(value))
+  || (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)));
+const number = (value: number | string): number => Number(value);
 
 export function isWorldRegionRow(value: unknown): value is WorldRegionRow {
   if (!value || typeof value !== 'object') return false;
@@ -28,7 +32,7 @@ export function isWorldRegionRow(value: unknown): value is WorldRegionRow {
     && Array.isArray(geometry.coordinates)
     && statuses.some((status) => status === row.status)
     && [row.total_influence, row.owner_influence, row.my_influence, row.control_percentage, row.territory_count]
-      .every((number) => typeof number === 'number' && Number.isFinite(number));
+      .every(finiteNumber);
 }
 
 export function mapWorldRegion(row: WorldRegionRow, source: MapTerritory['source']): MapTerritory {
@@ -37,11 +41,11 @@ export function mapWorldRegion(row: WorldRegionRow, source: MapTerritory['source
     id: row.region_id,
     ownerUserId: row.owner_user_id,
     ownerDisplayName: row.owner_display_name,
-    ownerInfluencePoints: row.owner_influence,
-    totalInfluencePoints: row.total_influence,
-    myInfluencePoints: row.my_influence,
-    controlPercentage: row.control_percentage,
-    territoryCount: row.territory_count,
+    ownerInfluencePoints: number(row.owner_influence),
+    totalInfluencePoints: number(row.total_influence),
+    myInfluencePoints: number(row.my_influence),
+    controlPercentage: number(row.control_percentage),
+    territoryCount: number(row.territory_count),
     status: row.status,
     geometryType: row.geometry.type,
     polygons: polygons.flatMap((rings) => rings.length ? [{ outer: rings[0]!.map(point), holes: rings.slice(1).map((ring) => ring.map(point)) }] : []),
