@@ -1,8 +1,9 @@
 export type MapLoadingState = 'loading' | 'style-loaded' | 'loaded' | 'error';
-export type MapLoadingEvent = 'start' | 'style' | 'finish' | 'error';
+export type MapLoadingEvent = 'start' | 'style' | 'finish' | 'error' | 'timeout';
 export function nextMapLoadingState(current: MapLoadingState, event: MapLoadingEvent): MapLoadingState {
   if (event === 'start') return 'loading';
   if (event === 'error') return 'error';
+  if (event === 'timeout') return current === 'loaded' || current === 'error' ? current : 'error';
   if (event === 'style') return 'style-loaded';
   return current === 'style-loaded' || current === 'loaded' ? 'loaded' : current;
 }
