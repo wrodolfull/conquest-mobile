@@ -13,6 +13,7 @@ import { colors } from '@/theme';
 import { usePois } from '@/features/poi/PoiContext';
 import { useActiveActivity } from '@/features/activity/useActiveActivity';
 import { formatDuration } from '@/features/activity/activityRules';
+import { activeActivityDestination, homeActivityCtaPresentation } from '@/features/activity/activityPresentation';
 
 export function HomeScreen() {
   const [selectedTerritory, setSelectedTerritory] = useState<MapTerritory | null>(null);
@@ -20,6 +21,7 @@ export function HomeScreen() {
   const { notice, dismissNotice, simulate } = usePois();
   const showPoiDebug = __DEV__ && process.env.EXPO_PUBLIC_ENABLE_POI_DEBUG === 'true';
   const active = useActiveActivity();
+  const activityCta = homeActivityCtaPresentation(active);
   const [now,setNow]=useState(Date.now());
   useEffect(()=>{if(!active)return;const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[active]);
 
@@ -64,16 +66,16 @@ export function HomeScreen() {
           ]}
         >
           <Pressable
-            accessibilityLabel={active?'Activity in progress':'Start activity'}
+            accessibilityLabel={activityCta.accessibilityLabel}
             accessibilityRole="button"
-            onPress={() => active?router.push({pathname:'/activity/active',params:{type:active.type,sessionId:active.id}}):router.push('/activity/select')}
-            style={({ pressed }) => [styles.start, pressed && styles.pressed]}
+            onPress={() => active ? router.push(activeActivityDestination(active)) : router.push('/activity/select')}
+            style={({ pressed }) => [styles.start, { borderColor: activityCta.borderColor }, active && styles.active, pressed && styles.pressed]}
           >
-            <LinearGradient colors={['#D8FF73', colors.lime]} style={styles.startIcon}>
-              <Ionicons name={active?.status==='interrupted'?'warning':'play'} size={21} color={colors.background} style={styles.playIcon} />
+            <LinearGradient colors={active ? ['#FFB15F', activityCta.iconColor] : ['#D8FF73', colors.lime]} style={styles.startIcon}>
+              <Ionicons name={activityCta.icon} size={21} color={colors.background} style={!active ? styles.playIcon : undefined} />
             </LinearGradient>
             <View style={styles.startCopy}>
-              <Text style={styles.startTitle}>{active?'Activity in progress':'Start activity'}</Text>
+              <View style={styles.titleRow}>{active ? <View style={styles.activeDot} /> : null}<Text style={styles.startTitle}>{activityCta.title}</Text></View>
               <Text style={styles.startDetail}>{active?`${active.type}  •  ${(active.distanceMeters/1000).toFixed(2)} km  •  ${formatDuration(Math.max(0,Math.floor((now-active.startedAt)/1000)))}  •  Tap to return`:'Walk  •  Run  •  Cycle  •  Indoor'}</Text>
             </View>
             <Ionicons name="chevron-forward" size={19} color={colors.lime} />
@@ -111,10 +113,13 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 7,
   },
+  active: { backgroundColor: '#111916F2', shadowColor: '#FF9F43', shadowOpacity: 0.18 },
   pressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
   startIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   playIcon: { marginLeft: 2 },
   startCopy: { flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF9F43' },
   startTitle: { color: colors.text, fontSize: 17, lineHeight: 21, fontWeight: '900' },
   startDetail: { color: colors.muted, fontSize: 9, marginTop: 2 },
 });
