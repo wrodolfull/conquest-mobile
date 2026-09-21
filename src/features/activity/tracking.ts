@@ -2,6 +2,7 @@ import type { ActivityType } from '../../types/game';
 
 export type OutdoorActivityType = Exclude<ActivityType, 'indoor'>;
 export type TrackingPhase = 'acquiring' | 'tracking';
+export type ActivityGpsState = 'acquiring' | 'ready' | 'tracking';
 export type GpsQuality = 'ACQUIRING' | 'POOR' | 'FAIR' | 'GOOD' | 'EXCELLENT';
 
 export interface ActivityPoint {
@@ -51,6 +52,20 @@ export interface TrackingEngineState {
 export interface ProcessResult { state: TrackingEngineState; decisions: { point: ActivityPoint; decision: PointDecision }[] }
 
 export const createTrackingState = (type: OutdoorActivityType): TrackingEngineState => ({ type, phase: 'acquiring', accepted: [], rejected: [], startup: [], recentAccuracies: [] });
+
+/** A route needs an anchor and a second accepted fix before it can be completed. */
+export function activityGpsState(state: Pick<TrackingEngineState, 'phase' | 'accepted'>): ActivityGpsState {
+  if (state.phase === 'acquiring' || state.accepted.length === 0) return 'acquiring';
+  return state.accepted.length === 1 ? 'ready' : 'tracking';
+}
+
+export function canFinishOutdoorActivity(state: Pick<TrackingEngineState, 'phase' | 'accepted'>): boolean {
+  return activityGpsState(state) === 'tracking';
+}
+
+export function hasSyncableOutdoorRoute(points: readonly ActivityPoint[]): boolean {
+  return points.length >= 2;
+}
 
 export function segmentDistanceMeters(a: ActivityPoint, b: ActivityPoint): number {
   const radius = 6_371_000; const radians = (degrees: number) => degrees * Math.PI / 180;
