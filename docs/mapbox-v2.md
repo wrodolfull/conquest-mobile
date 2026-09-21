@@ -7,6 +7,10 @@ CONQUEST uses `@rnmapbox/maps` as its sole native game-world renderer. Mapbox ne
 
 `app.config.js` explicitly selects the Mapbox implementation and passes the build secret only through `process.env.RNMAPBOX_MAPS_DOWNLOAD_TOKEN`. No token value is stored in the repository.
 
+## Physical-device authentication diagnosis
+
+The black base map observed during Map Engine V2 physical testing was caused by an invalid public runtime value in `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN`; the Mapbox Styles API returned HTTP 401. Correcting that public `pk` token restored runtime authentication. The v10 map loading lifecycle handlers and unavailable-state fallback remain diagnostic and resilience measures, not the root-cause fix. Local Metro bundles read `.env`/`.env.local`, so an EAS server variable alone does not configure a locally served JavaScript bundle.
+
 ## EAS configuration and builds
 
 Set both tokens separately in the EAS **development**, **preview**, and **production** environments (and the optional style URL where desired). Mark the download token as secret. For development, for example:
