@@ -3,6 +3,7 @@ import type { ActivityType } from '../../types/game';
 export type OutdoorActivityType = Exclude<ActivityType, 'indoor'>;
 export type TrackingPhase = 'acquiring' | 'tracking';
 export type ActivityGpsState = 'acquiring' | 'ready' | 'tracking';
+export type OutdoorStopAction = 'finish' | 'confirm-discard';
 export type GpsQuality = 'ACQUIRING' | 'POOR' | 'FAIR' | 'GOOD' | 'EXCELLENT';
 
 export interface ActivityPoint {
@@ -61,6 +62,10 @@ export function activityGpsState(state: Pick<TrackingEngineState, 'phase' | 'acc
 
 export function canFinishOutdoorActivity(state: Pick<TrackingEngineState, 'phase' | 'accepted'>): boolean {
   return hasSyncableOutdoorRoute(state.accepted);
+}
+
+export function outdoorStopAction(state: Pick<TrackingEngineState, 'accepted'>): OutdoorStopAction {
+  return hasSyncableOutdoorRoute(state.accepted) ? 'finish' : 'confirm-discard';
 }
 
 export function hasSyncableOutdoorRoute(points: readonly ActivityPoint[]): boolean {
