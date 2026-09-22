@@ -15,6 +15,7 @@ export interface RegionPolygon {
 /** A display-only aggregate. Persistent gameplay continues to target atomic territory ids. */
 export interface MapTerritory {
   id: string;
+  name: string;
   ownerUserId: string | null;
   ownerDisplayName: string | null;
   ownerInfluencePoints: number;
@@ -27,6 +28,9 @@ export interface MapTerritory {
   polygons: RegionPolygon[];
   source: RegionSource;
 }
+
+/** Optional future context only. Gameplay zones never depend on this hierarchy. */
+export interface TerritoryMacroContext { city?: string; district?: string; neighborhood?: string }
 
 export interface WorldViewport {
   west: number;
