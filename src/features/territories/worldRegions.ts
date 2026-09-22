@@ -3,6 +3,7 @@ import type { MapTerritory, TerritoryGeometry, TerritoryStatus } from './types';
 
 export interface WorldRegionRow {
   region_id: string;
+  zone_name: string;
   owner_user_id: string | null;
   owner_display_name: string | null;
   geometry: TerritoryGeometry;
@@ -26,6 +27,7 @@ export function isWorldRegionRow(value: unknown): value is WorldRegionRow {
   const row = value as Partial<WorldRegionRow>;
   const geometry = row.geometry;
   return typeof row.region_id === 'string'
+    && typeof row.zone_name === 'string'
     && (row.owner_user_id === null || typeof row.owner_user_id === 'string')
     && (row.owner_display_name === null || typeof row.owner_display_name === 'string')
     && !!geometry && (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon')
@@ -39,6 +41,7 @@ export function mapWorldRegion(row: WorldRegionRow, source: MapTerritory['source
   const polygons = row.geometry.type === 'Polygon' ? [row.geometry.coordinates] : row.geometry.coordinates;
   return {
     id: row.region_id,
+    name: row.zone_name,
     ownerUserId: row.owner_user_id,
     ownerDisplayName: row.owner_display_name,
     ownerInfluencePoints: number(row.owner_influence),

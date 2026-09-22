@@ -24,14 +24,19 @@ export function calculateTraversals(points: readonly ActivityPoint[]): Territory
   points.slice(1).forEach((point, index) => {
     if (point.breakBefore) return;
     const previous = points[index]!;
-    const territory = findTerritory({ latitude: (previous.latitude + point.latitude) / 2, longitude: (previous.longitude + point.longitude) / 2 });
-    const current = distances.get(territory.id) ?? { name: territory.name, meters: 0 };
-    current.meters += haversine(previous, point);
-    distances.set(territory.id, current);
+    const segment = haversine(previous, point);
+    const pieces = Math.max(1, Math.ceil(segment / 20));
+    for (let piece = 0; piece < pieces; piece += 1) {
+      const ratio = (piece + 0.5) / pieces;
+      const territory = findTerritory({ latitude: previous.latitude + (point.latitude - previous.latitude) * ratio, longitude: previous.longitude + (point.longitude - previous.longitude) * ratio });
+      const current = distances.get(territory.id) ?? { name: territory.name, meters: 0 };
+      current.meters += segment / pieces;
+      distances.set(territory.id, current);
+    }
   });
-  const traversals=[...distances].map(([territoryId, value]) => ({ territoryId, territoryName: value.name, distanceMeters: value.meters, influenceEarned: influenceForDistance(value.meters) }));
-  let remaining=influenceForDistance(traversals.reduce((sum,item)=>sum+item.distanceMeters,0))-traversals.reduce((sum,item)=>sum+item.influenceEarned,0);
-  for(const item of [...traversals].sort((a,b)=>(b.distanceMeters%INFLUENCE_METERS_PER_POINT)-(a.distanceMeters%INFLUENCE_METERS_PER_POINT)||a.territoryId.localeCompare(b.territoryId))){if(remaining--<=0)break;item.influenceEarned+=1;}
+  const traversals = [...distances].map(([territoryId, value]) => ({ territoryId, territoryName: value.name, distanceMeters: value.meters, influenceEarned: influenceForDistance(value.meters) }));
+  let remaining = influenceForDistance(traversals.reduce((sum, item) => sum + item.distanceMeters, 0)) - traversals.reduce((sum, item) => sum + item.influenceEarned, 0);
+  for (const item of [...traversals].sort((a, b) => (b.distanceMeters % INFLUENCE_METERS_PER_POINT) - (a.distanceMeters % INFLUENCE_METERS_PER_POINT) || a.territoryId.localeCompare(b.territoryId))) { if (remaining-- <= 0) break; item.influenceEarned += 1; }
   return traversals;
 }
 
