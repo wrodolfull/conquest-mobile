@@ -12,7 +12,7 @@ export interface ActivitySyncFailure {
   global: boolean;
 }
 
-interface CompleteActivityResponse {
+export interface CompleteActivityResponse {
   activityId: string;
   distanceMeters: number;
   xpEarned: number;
@@ -20,6 +20,9 @@ interface CompleteActivityResponse {
   influenceEarned: number;
   territoryImpacts: unknown[];
   loot: unknown[];
+  newZonesDiscovered: { territoryId: string; territoryName: string }[];
+  newZonesCount: number;
+  completedObjectives: { key: string; title: string; coins: number }[];
 }
 
 export function isCompleteActivityResponse(value: unknown): value is CompleteActivityResponse {
@@ -31,7 +34,10 @@ export function isCompleteActivityResponse(value: unknown): value is CompleteAct
     && typeof response.energyEarned === 'number'
     && typeof response.influenceEarned === 'number'
     && Array.isArray(response.territoryImpacts)
-    && Array.isArray(response.loot);
+    && Array.isArray(response.loot)
+    && Array.isArray(response.newZonesDiscovered)
+    && typeof response.newZonesCount === 'number'
+    && Array.isArray(response.completedObjectives);
 }
 
 export function classifySyncFailure(error: unknown): ActivitySyncFailure {
