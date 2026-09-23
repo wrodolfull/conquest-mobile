@@ -31,10 +31,10 @@ export function BottomNavigation() {
 }
 
 const styles = StyleSheet.create({
-  nav: { minHeight: 67, flexDirection: 'row', backgroundColor: '#08110FF5', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 7, paddingHorizontal: 2 },
+  nav: { minHeight: 64, flexDirection: 'row', backgroundColor: colors.mapOverlay, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 5, paddingHorizontal: 2 },
   item: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 1, position: 'relative' },
   pressed: { opacity: 0.65 },
-  label: { color: colors.muted, fontSize: 9, fontWeight: '700' },
+  label: { color: colors.muted, fontSize: 8, fontWeight: '800', letterSpacing: .2 },
   icon: { width: 35, height: 28, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   activeIcon: { backgroundColor: '#37D8D112' },
   active: { color: colors.cyan },
