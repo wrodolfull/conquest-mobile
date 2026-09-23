@@ -23,7 +23,7 @@ export class MapErrorBoundary extends Component<Props, State> {
         <View style={styles.fallback}>
           <Ionicons name="map-outline" color={colors.lime} size={34} />
           <Text style={styles.title}>MAP TEMPORARILY UNAVAILABLE</Text>
-          <Text style={styles.message}>Update Expo Go and reload the project. Your activities and the rest of CONQUEST are still available.</Text>
+          <Text style={styles.message}>Update Expo Go and reload the project. Your activities and the rest of Ruqest are still available.</Text>
         </View>
       );
     }
