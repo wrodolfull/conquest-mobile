@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { IconName } from '@/types/game';
 import { colors } from '@/theme';
 
-interface IconButtonProps { icon: IconName; label: string; badge?: boolean }
+interface IconButtonProps { icon: IconName; label: string; badge?: boolean; onPress?: () => void }
 
-export function IconButton({ icon, label, badge }: IconButtonProps) {
+export function IconButton({ icon, label, badge, onPress }: IconButtonProps) {
   return (
-    <Pressable accessibilityLabel={label} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+    <Pressable accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
       <Ionicons name={icon} size={21} color={colors.text} />
-      {badge ? <Pressable style={styles.badge} /> : null}
+      {badge ? <View style={styles.badge} /> : null}
     </Pressable>
   );
 }

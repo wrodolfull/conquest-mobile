@@ -4,12 +4,17 @@ import { IconButton } from '@/components/IconButton';
 import { ResourceCounter } from '@/components/ResourceCounter';
 import { useAuth } from '@/features/auth/AuthContext';
 import { colors } from '@/theme';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { socialSummaryRepository } from '@/services/backend/socialSummaryRepository';
 
 export function PlayerHeader() {
   const { profile, progress } = useAuth();
   const name = profile?.display_name || profile?.username || 'Player'; const level = progress?.level; const initial = name.slice(0, 1).toUpperCase(); const xpPercent = progress ? Math.min(100, progress.xp % 1000 / 10) : 0; const resources = [{ label: 'Energy', value: progress ? String(progress.energy) : '—', icon: 'flash' as const, color: colors.gold }, { label: 'Coins', value: progress ? String(progress.coins) : '—', icon: 'diamond' as const, color: colors.cyan }];
   const { width } = useWindowDimensions();
   const compact = width < 380;
+  const [hasUnread,setHasUnread]=useState(false);
+  useFocusEffect(useCallback(()=>{let active=true;void socialSummaryRepository.get().then(value=>{if(active)setHasUnread(value.unreadNotifications>0)}).catch(()=>undefined);return()=>{active=false}},[]));
   return (
     <View style={styles.header}>
       <View style={styles.topRow}>
@@ -21,7 +26,7 @@ export function PlayerHeader() {
           <View style={styles.xpTrack}><LinearGradient colors={[colors.lime, colors.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.xpFill, { width: `${xpPercent}%` }]} /></View>
         </View>
       </View>
-      <IconButton icon="notifications-outline" label="Notifications" badge />
+      <IconButton icon="notifications-outline" label="Notifications" badge={hasUnread} onPress={()=>router.push('/notifications')} />
       </View>
       <View style={styles.actions}>{resources.map((resource) => <ResourceCounter compact={compact} key={resource.label} resource={resource} />)}</View>
     </View>
