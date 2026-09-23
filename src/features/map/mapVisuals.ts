@@ -2,7 +2,17 @@ import type { MapTerritory } from '../territories/types';
 
 const RIVAL_PALETTE = ['#40D9FF', '#A977FF', '#FF9B4A', '#FF625B', '#4D8CFF'] as const;
 const NEUTRAL_COLOR = '#A2ADA9';
+const OWNED_COLOR = '#BDFB46';
+const CONTESTED_COLOR = '#FFD166';
 const TERRITORY_STATUSES = ['owned', 'rival', 'neutral', 'contested'] as const;
+
+export interface TerritoryVisual {
+  fillColor: string;
+  fillOpacity: number;
+  strokeColor: string;
+  strokeOpacity: number;
+  strokeWidth: number;
+}
 
 export function territoryStatusLabel(status: unknown): string {
   return typeof status === 'string' && TERRITORY_STATUSES.some((value) => value === status)
@@ -19,19 +29,29 @@ export function rivalColor(ownerUserId: string): string {
   return RIVAL_PALETTE[(hash >>> 0) % RIVAL_PALETTE.length]!;
 }
 
-export function territoryVisual(territory: MapTerritory) {
-  const neutral = territory.status === 'neutral' || territory.ownerUserId === null;
-  let color = NEUTRAL_COLOR;
-  if (territory.status !== 'neutral' && territory.ownerUserId !== null) {
-    color = territory.status === 'owned'
-      ? '#BDFB46'
-      : rivalColor(territory.ownerUserId);
+export function territoryVisual(territory: MapTerritory, selected = false): TerritoryVisual {
+  if (territory.status === 'neutral') {
+    return {
+      fillColor: NEUTRAL_COLOR,
+      fillOpacity: 0,
+      strokeColor: NEUTRAL_COLOR,
+      strokeOpacity: selected ? 0.28 : 0.16,
+      strokeWidth: selected ? 1.5 : 0.7,
+    };
   }
 
-  const contested = !neutral && territory.status === 'contested';
+  const color = territory.status === 'owned'
+    ? OWNED_COLOR
+    : territory.status === 'contested'
+      ? CONTESTED_COLOR
+      : rivalColor(territory.ownerUserId ?? 'unknown-rival');
+  const contested = territory.status === 'contested';
+
   return {
-    fillColor: `${color}${neutral ? '00' : '38'}`,
-    strokeColor: contested ? '#FFF4C7C0' : `${color}99`,
-    strokeWidth: contested ? 2.2 : 1,
+    fillColor: color,
+    fillOpacity: selected ? 0.23 : contested ? 0.16 : territory.status === 'owned' ? 0.16 : 0.14,
+    strokeColor: color,
+    strokeOpacity: selected ? 0.85 : contested ? 0.8 : territory.status === 'owned' ? 0.7 : 0.64,
+    strokeWidth: selected ? 2 : contested ? 1.8 : 1.2,
   };
 }
