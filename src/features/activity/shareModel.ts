@@ -1,9 +1,9 @@
 interface ShareableActivity {
   type: 'walking' | 'running' | 'cycling';
   syncStatus: 'pending' | 'syncing' | 'synced' | 'failed';
-  distanceMeters: number; durationSeconds: number; xpEarned: number; influenceEarned: number; endedAt: number;
+  distanceMeters: number; durationSeconds: number; xpEarned: number; energyEarned: number; influenceEarned: number; endedAt: number;
   traversals: readonly unknown[];
-  authoritativeDistanceMeters?: number; authoritativeXpEarned?: number; authoritativeInfluenceEarned?: number;
+  authoritativeDistanceMeters?: number; authoritativeXpEarned?: number; authoritativeEnergyEarned?: number; authoritativeInfluenceEarned?: number;
   authoritativeTerritoryImpacts?: readonly unknown[];
   authoritativeLoot?: readonly { item: { name: string } }[];
 }
@@ -13,6 +13,7 @@ export interface ActivityShareModel {
   distanceMeters: number;
   durationSeconds: number;
   xpEarned: number;
+  energyEarned: number;
   influenceEarned: number;
   territoriesImpacted: number;
   lootSummary?: string;
@@ -35,6 +36,7 @@ export function createActivityShareModel(activity: ShareableActivity): ActivityS
       : activity.distanceMeters,
     durationSeconds: activity.durationSeconds,
     xpEarned: authoritative ? activity.authoritativeXpEarned ?? activity.xpEarned : activity.xpEarned,
+    energyEarned: authoritative ? activity.authoritativeEnergyEarned ?? activity.energyEarned : activity.energyEarned,
     influenceEarned: authoritative
       ? activity.authoritativeInfluenceEarned ?? activity.influenceEarned
       : activity.influenceEarned,

@@ -42,3 +42,15 @@ test('Home presentation uses Ruqest copy and never opaque black territory fills'
   assert.doesNotMatch(visuals, /#000000/);
   assert.match(visuals, /fillOpacity: selected \? 0\.23/);
 });
+
+test('circular XP ring maps boundary percentages to stable segments', () => {
+  const { xpRingSegmentCount, XP_RING_SEGMENTS } = require('../.test-dist/features/home/xpProgress.js');
+  assert.equal(XP_RING_SEGMENTS, 40);
+  assert.deepEqual([0, 25, 50, 75, 100].map((percent) => xpRingSegmentCount(percent)), [0, 10, 20, 30, 40]);
+  assert.equal(xpRingSegmentCount(-10), 0);
+  assert.equal(xpRingSegmentCount(110), 40);
+  const header = read('src/components/PlayerHeader.tsx');
+  assert.match(header, /progress\.xp % 1000 \/ 10/);
+  assert.match(header, /XpProgressRing percent=\{xpPercent\}/);
+  assert.doesNotMatch(header, /xpTrack|xpFill/);
+});

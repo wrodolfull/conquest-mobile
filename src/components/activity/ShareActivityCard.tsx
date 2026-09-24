@@ -11,7 +11,7 @@ export function ShareActivityCard({ model }: { model: ActivityShareModel }) {
     <View collapsable={false} style={styles.card} testID="share-activity-card">
       <View style={styles.topLine} />
       <View style={styles.brandRow}>
-        <Text style={styles.brand}>CONQUEST</Text>
+        <Text style={styles.brand}>RUQEST</Text>
         <View style={[styles.icon, { borderColor: activity.color }]}>
           <Ionicons name={activity.icon} size={21} color={activity.color} />
         </View>
@@ -24,6 +24,7 @@ export function ShareActivityCard({ model }: { model: ActivityShareModel }) {
       <Text style={styles.durationLabel}>DURATION</Text>
       <View style={styles.stats}>
         <CardStat value={`+${model.xpEarned}`} label="XP" />
+        <CardStat value={`+${model.energyEarned}`} label="ENERGY" />
         <CardStat value={`+${model.influenceEarned}`} label="INFLUENCE" />
         <CardStat value={String(model.territoriesImpacted)} label="TERRITORIES" />
       </View>
@@ -41,22 +42,22 @@ function CardStat({ value, label }: { value: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  card: { width: 340, minHeight: 500, padding: 26, overflow: 'hidden', borderRadius: 28, backgroundColor: '#091310', borderWidth: 1, borderColor: '#29413A' },
+  card: { width: 340, minHeight: 500, padding: 26, overflow: 'hidden', borderRadius: 28, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
   topLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: colors.lime },
   brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brand: { color: colors.text, fontSize: 17, fontWeight: '900', letterSpacing: 3 },
-  icon: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#10201C' },
+  icon: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   type: { marginTop: 32, fontSize: 12, fontWeight: '900', letterSpacing: 2.5 },
   distance: { color: colors.text, marginTop: 3, fontSize: 66, lineHeight: 74, fontWeight: '900', letterSpacing: -3 },
   unit: { color: colors.muted, fontSize: 10, fontWeight: '900', letterSpacing: 2 },
   rule: { width: 46, height: 3, marginVertical: 24, backgroundColor: colors.cyan, borderRadius: 2 },
   duration: { color: colors.text, fontSize: 30, fontWeight: '800' },
   durationLabel: { color: colors.muted, marginTop: 2, fontSize: 8, fontWeight: '900', letterSpacing: 1.5 },
-  stats: { flexDirection: 'row', marginTop: 24, gap: 7 },
-  stat: { flex: 1, paddingVertical: 13, alignItems: 'center', borderRadius: 13, backgroundColor: '#12211D' },
+  stats: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 24, gap: 7 },
+  stat: { width: '48%', flexGrow: 1, paddingVertical: 11, alignItems: 'center', borderRadius: 13, backgroundColor: colors.surface },
   statValue: { color: colors.text, fontSize: 17, fontWeight: '900' },
   statLabel: { color: colors.muted, marginTop: 4, fontSize: 7, fontWeight: '900' },
-  loot: { marginTop: 14, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#31463F' },
+  loot: { marginTop: 14, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
   lootLabel: { color: colors.lime, fontSize: 7, fontWeight: '900', letterSpacing: 1.2 },
   lootValue: { color: colors.text, marginTop: 4, fontSize: 10, lineHeight: 14, fontWeight: '700' },
   footer: { marginTop: 'auto', paddingTop: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
