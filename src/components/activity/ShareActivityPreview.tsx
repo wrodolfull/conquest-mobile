@@ -17,7 +17,7 @@ export function ShareActivityPreview({ model, visible, onClose }: ShareActivityP
     try {
       if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is unavailable on this device.');
       const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your CONQUEST activity', UTI: 'public.png' });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your Ruqest activity', UTI: 'public.png' });
     } catch (error) {
       Alert.alert('Unable to share', error instanceof Error ? error.message : 'Please try again.');
     } finally { setSharing(false); }

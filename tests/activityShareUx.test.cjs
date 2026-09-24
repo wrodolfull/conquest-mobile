@@ -29,3 +29,17 @@ test('share model uses server-confirmed authoritative values', () => {
 test('Activity Results exposes the Share Activity entry point', () => {
   const source = require('node:fs').readFileSync('src/app/activity/results.tsx', 'utf8'); assert.match(source, /SHARE ACTIVITY/); assert.match(source, /ShareActivityPreview/);
 });
+
+test('Activity V2 keeps routing, sync distinctions, privacy, and Ruqest branding', () => {
+  const fs = require('node:fs');
+  const select = fs.readFileSync('src/app/activity/select.tsx', 'utf8');
+  const active = fs.readFileSync('src/app/activity/active.tsx', 'utf8');
+  const results = fs.readFileSync('src/app/activity/results.tsx', 'utf8');
+  const share = fs.readFileSync('src/components/activity/ShareActivityCard.tsx', 'utf8');
+  assert.match(select, /pathname: '\/activity\/active'/);
+  assert.match(active, /router\.replace\('\/map'\)/);
+  assert.match(results, /PENDING SYNC · ESTIMATED/);
+  assert.match(results, /NOT ENOUGH GPS DATA/);
+  assert.match(share, />RUQEST</);
+  for (const source of [select, active, results, share]) assert.doesNotMatch(source, />[^<{]*CONQUEST[^<{]*</i);
+});

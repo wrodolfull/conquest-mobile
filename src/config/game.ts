@@ -4,9 +4,9 @@ import { colors } from '@/theme';
 export const WEEKLY_DISTANCE_GOAL_KM = 25;
 
 export const activities: Activity[] = [
-  { id: 'walking', label: 'Walking', detail: 'Explore', icon: 'walk-outline', color: colors.lime },
-  { id: 'running', label: 'Running', detail: 'Conquer', icon: 'speedometer-outline', color: colors.danger },
-  { id: 'cycling', label: 'Cycling', detail: 'Go farther', icon: 'bicycle-outline', color: colors.cyan },
+  { id: 'walking', label: 'Walk', detail: 'Explore nearby', icon: 'walk-outline', color: colors.lime },
+  { id: 'running', label: 'Run', detail: 'Build momentum', icon: 'speedometer-outline', color: colors.danger },
+  { id: 'cycling', label: 'Cycle', detail: 'Go farther', icon: 'bicycle-outline', color: colors.cyan },
   { id: 'indoor', label: 'Indoor', detail: 'Coming soon', icon: 'barbell-outline', color: colors.violet },
 ];
 
