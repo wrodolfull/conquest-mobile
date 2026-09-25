@@ -16,7 +16,7 @@ import { ConquestBaseMap } from './mapbox/ConquestBaseMap';
 import { resolveTerritoryTap, territoryFeatureCollection } from './mapbox/territoryGeoJson';
 import type { FeatureCollection, PointGeometry } from './mapbox/geoJsonTypes';
 import type { ActiveActivitySession } from '@/services/storage/activeActivityRepository';
-import { activeActivityRepository, loadTrackingState } from '@/services/storage/activeActivityRepository';
+import { activeActivityRepository, loadLiveTrackingState } from '@/services/storage/activeActivityRepository';
 import type { ActivityPoint } from '@/features/activity/tracking';
 import { routeFeatureCollection } from './mapbox/routeGeoJson';
 import { provisionalTerritoryFeatureCollection } from '@/features/home/activeActivityMapFeedback';
@@ -105,7 +105,7 @@ export function ConquestMap({ activeActivity, selectedTerritory, onTerritorySele
     let mounted = true;
     const refresh = () => {
       if (!activeActivity) { setActiveRoute([]); return; }
-      void loadTrackingState(activeActivity).then(state => { if (mounted) setActiveRoute(state.accepted); });
+      void loadLiveTrackingState(activeActivity).then(state => { if (mounted) setActiveRoute(state.accepted); });
     };
     refresh();
     const unsubscribe = activeActivityRepository.subscribe(refresh);
