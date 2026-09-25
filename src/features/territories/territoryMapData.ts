@@ -2,8 +2,9 @@ import type { LatLng } from '../map/mapbox/geoJsonTypes';
 import { generateTerritories } from './territoryGenerator';
 import type { TerritoryCell } from './territoryGrid';
 import type { WorldViewport } from './types';
+import { isValidWorldViewport, WORLD_VIEWPORT_MAX_DEGREES } from '../map/mapPerformance';
 
-export const WORLD_VIEWPORT_MAX_DEGREES = 0.25;
+export { WORLD_VIEWPORT_MAX_DEGREES } from '../map/mapPerformance';
 
 export function worldViewportForRegion(region: LatLng & { latitudeDelta: number; longitudeDelta: number }): WorldViewport | null {
   if (region.latitudeDelta <= 0 || region.longitudeDelta <= 0
@@ -15,9 +16,7 @@ export function worldViewportForRegion(region: LatLng & { latitudeDelta: number;
     south: region.latitude - region.latitudeDelta / 2,
     north: region.latitude + region.latitudeDelta / 2,
   };
-  return viewport.west >= -180 && viewport.east <= 180 && viewport.south >= -85 && viewport.north <= 85
-    ? viewport
-    : null;
+  return isValidWorldViewport(viewport) ? viewport : null;
 }
 
 /** Atomic cells are candidates for diagnostics only; the production map uses world regions. */
