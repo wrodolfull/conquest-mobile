@@ -15,17 +15,17 @@ const friendly = (message: string): string => {
 export type OAuthProvider = 'google'; // Add 'apple' here when Apple Sign In ships.
 export const authRepository = {
   async signInWithEmail(email: string, password: string): Promise<AuthResult> {
-    if (!isSupabaseConfigured) return { ok: false, message: 'Supabase is not configured for this build.' };
+    if (!isSupabaseConfigured) return { ok: false, message: 'Ruqest services are unavailable in this build. Please contact the beta team.' };
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     return error ? { ok: false, message: friendly(error.message) } : { ok: true };
   },
   async signUpWithEmail(email: string, password: string): Promise<AuthResult> {
-    if (!isSupabaseConfigured) return { ok: false, message: 'Supabase is not configured for this build.' };
+    if (!isSupabaseConfigured) return { ok: false, message: 'Ruqest services are unavailable in this build. Please contact the beta team.' };
     const { error } = await supabase.auth.signUp({ email: email.trim(), password });
     return error ? { ok: false, message: friendly(error.message) } : { ok: true, message: 'Account created. Check your email if confirmation is enabled.' };
   },
   async signInWithOAuthProvider(provider: OAuthProvider): Promise<AuthResult> {
-    if (!isSupabaseConfigured) return { ok: false, message: 'Supabase is not configured for this build.' };
+    if (!isSupabaseConfigured) return { ok: false, message: 'Ruqest services are unavailable in this build. Please contact the beta team.' };
     const redirectTo = Linking.createURL('auth/callback');
     const { data, error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo, skipBrowserRedirect: true } });
     if (error || !data.url) return { ok: false, message: friendly(error?.message ?? 'OAuth URL missing') };

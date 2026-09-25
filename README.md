@@ -1,4 +1,4 @@
-# CONQUEST Mobile
+# RUQEST Mobile
 
 A mobile location-based fitness strategy game built with React Native, Expo, TypeScript, Expo Router, and a server-authoritative Supabase backend.
 
@@ -19,5 +19,5 @@ npm run lint
 
 This version records durable outdoor GPS activities, synchronizes accepted results to
 Supabase, derives territory state from authoritative influence, and discovers
-CONQUEST-managed POIs. Inventory, Battles, Rankings, and the production Indoor economy
+RUQEST-managed POIs. Inventory, Battles, Rankings, and the production Indoor economy
 remain intentionally unavailable rather than displaying fictional runtime data.

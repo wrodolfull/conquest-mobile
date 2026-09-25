@@ -1,6 +1,6 @@
 # Supabase backend setup
 
-CONQUEST stores workouts locally first. Supabase supplies authentication and the authoritative persistent world; internet access is never required while GPS is recording.
+RUQEST stores workouts locally first. Supabase supplies authentication and the authoritative persistent world; internet access is never required while GPS is recording.
 
 ## Project and database
 
@@ -60,7 +60,7 @@ The unauthenticated request must return `401`. An identical authenticated `clien
 
 ## Android build and manual validation
 
-AsyncStorage, WebBrowser, and AuthSession are new native dependencies. **Rebuild the Android Development Build**; Expo Go is not an adequate test target for CONQUEST background location.
+AsyncStorage, WebBrowser, and AuthSession are new native dependencies. **Rebuild the Android Development Build**; Expo Go is not an adequate test target for RUQEST background location.
 
 ```sh
 npm install

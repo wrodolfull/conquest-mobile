@@ -8,4 +8,4 @@ The native image flow is:
 2. `react-native-view-shot` captures that view to a temporary PNG on the device. The image is not uploaded.
 3. `expo-sharing` presents the Android or iOS native share sheet for that temporary file.
 
-These are the two new native dependencies. `react-native-view-shot` is necessary to render a React Native view as an image; `expo-sharing` is necessary to reliably hand the local image file to the platform share sheet. They are not being added for text sharing. Because they contain native modules, an existing CONQUEST development client must be rebuilt before this feature can run; no additional app config plugin is required.
+These are the two new native dependencies. `react-native-view-shot` is necessary to render a React Native view as an image; `expo-sharing` is necessary to reliably hand the local image file to the platform share sheet. They are not being added for text sharing. Because they contain native modules, an existing RUQEST development client must be rebuilt before this feature can run; no additional app config plugin is required.

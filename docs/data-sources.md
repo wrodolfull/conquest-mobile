@@ -1,4 +1,4 @@
-# CONQUEST data sources
+# RUQEST data sources
 
 Runtime data belongs to exactly one category: **STATIC**, **LOCAL DEVICE**, **SERVER**, or explicitly gated **DEV FIXTURE**. Server economy data remains authoritative; caches are last-known snapshots, never successful offline mutations.
 
