@@ -9,7 +9,7 @@ const friendly = (message: string): string => {
   const text = message.toLowerCase();
   if (text.includes('invalid login')) return 'Email or password is incorrect.';
   if (text.includes('already registered')) return 'An account already exists for this email.';
-  if (text.includes('network') || text.includes('fetch')) return 'CONQUEST could not reach the server. Try again when connected.';
+  if (text.includes('network') || text.includes('fetch')) return 'Ruqest could not reach the server. Try again when connected.';
   return 'Authentication could not be completed. Please try again.';
 };
 export type OAuthProvider = 'google'; // Add 'apple' here when Apple Sign In ships.

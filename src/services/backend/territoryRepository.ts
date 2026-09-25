@@ -3,6 +3,7 @@ import * as SQLite from 'expo-sqlite';
 import { supabase } from '@/lib/supabase';
 import { isWorldRegionRow, mapWorldRegion, viewportKey, type WorldRegionRow } from '@/features/territories/worldRegions';
 import type { MapTerritory, WorldViewport } from '@/features/territories/types';
+import { parseCachedJson } from '@/services/storage/cacheJson';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | undefined;
 const listeners = new Set<() => void>();
@@ -35,9 +36,15 @@ export const territoryRepository = {
       }
       return { regions: rows.map((row) => mapWorldRegion(row, 'server')), source: 'server' };
     } catch {
-      const database = await db();
-      const cached = await database.getFirstAsync<{payload:string}>('SELECT payload FROM world_region_cache WHERE west<=? AND east>=? AND south<=? AND north>=? ORDER BY updated_at DESC LIMIT 1', viewport.west, viewport.east, viewport.south, viewport.north);
-      return { regions: cached ? parseRows(JSON.parse(cached.payload)).map((row) => mapWorldRegion(row, 'cache')) : [], source: 'cache' };
+      try {
+        const database = await db();
+        const cached = await database.getFirstAsync<{payload:string}>('SELECT payload FROM world_region_cache WHERE west<=? AND east>=? AND south<=? AND north>=? ORDER BY updated_at DESC LIMIT 1', viewport.west, viewport.east, viewport.south, viewport.north);
+        const rows = cached ? parseCachedJson(cached.payload, (value): value is WorldRegionRow[] => Array.isArray(value) && value.every(isWorldRegionRow)) : undefined;
+        return { regions: (rows ?? []).map((row) => mapWorldRegion(row, 'cache')), source: 'cache' };
+      } catch (cacheError) {
+        if (__DEV__) console.warn('[Territory cache] Offline fallback unavailable.', String(cacheError));
+        return { regions: [], source: 'cache' };
+      }
     }
   },
   async getWorldRegions(viewport: WorldViewport): Promise<MapTerritory[]> {

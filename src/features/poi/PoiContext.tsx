@@ -36,6 +36,9 @@ export function PoiProvider({ children }: { children: ReactNode }) {
   const [permissionRevision, setPermissionRevision] = useState(0);
   const previousStatuses = useRef(new Map<string, PoiPresence['status']>());
   const reliableLocation = useRef<ActivityPoint | undefined>(undefined);
+  const poiFetchLocation = useRef<ActivityPoint | undefined>(undefined);
+  const poiFetchedAt = useRef(0);
+  const poiRequestGeneration = useRef(0);
 
   useEffect(() => {
     let mounted = true;
@@ -66,9 +69,18 @@ export function PoiProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!location || locationDenied || pois.length) return;
-    void supabasePoiProvider.getNearbyPois(location,2_000).then(setPois).catch(()=>setPois([]));
-  }, [location, locationDenied, pois.length]);
+    if (!location || locationDenied) return;
+    const previous = poiFetchLocation.current;
+    const moved = !previous || distanceMeters(previous, location) >= 750;
+    const stale = Date.now() - poiFetchedAt.current >= 15 * 60_000;
+    if (!moved && !stale) return;
+    const generation = ++poiRequestGeneration.current;
+    poiFetchLocation.current = location;
+    poiFetchedAt.current = Date.now();
+    void supabasePoiProvider.getNearbyPois(location, 2_000)
+      .then((next) => { if (generation === poiRequestGeneration.current) setPois(next); })
+      .catch(() => { if (generation === poiRequestGeneration.current && !previous) setPois([]); });
+  }, [location, locationDenied]);
 
   useEffect(() => {
     if (!location || !pois.length) return;

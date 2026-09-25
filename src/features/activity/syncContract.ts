@@ -51,14 +51,14 @@ export function classifySyncFailure(error: unknown): ActivitySyncFailure {
     return { code: 'AUTHENTICATION_FAILURE', message: 'Sign in again, then retry synchronization.', global: true };
   }
   if (/network|fetch failed|offline|timed? ?out|connection/.test(message)) {
-    return { code: 'NETWORK_UNAVAILABLE', message: 'No server connection. Check your network and retry.', global: false };
+    return { code: 'NETWORK_UNAVAILABLE', message: 'Could not sync. Your activity is safe on this device; check your network and retry.', global: true };
   }
   if (/contract mismatch|malformed activity response|function.*not found|does not exist|schema cache/.test(message)) {
     return { code: 'BACKEND_VERSION_MISMATCH', message: 'The server needs an update before this activity can sync.', global: false };
   }
-  if (status !== undefined && status >= 500) return { code: 'SERVER_ERROR', message: 'The server is temporarily unavailable. Retry shortly.', global: false };
+  if (status !== undefined && status >= 500) return { code: 'SERVER_ERROR', message: 'The server is temporarily unavailable. Your activity is safe; retry shortly.', global: true };
   if (status === 400 || status === 409 || status === 422 || /invalid|rejected|impossible route/.test(message)) {
     return { code: 'ACTIVITY_REJECTED', message: 'The server could not accept this activity. Review diagnostics or contact support.', global: false };
   }
-  return { code: 'UNKNOWN_ERROR', message: 'Synchronization failed. Your activity remains safe on this device.', global: false };
+  return { code: 'UNKNOWN_ERROR', message: 'Synchronization failed. Your activity remains safe on this device.', global: true };
 }

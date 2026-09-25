@@ -82,7 +82,7 @@ export const activeActivityRepository = {
   async markInterrupted(id: string) { const db = await database(); await db.runAsync("UPDATE active_activity_sessions SET status = 'interrupted' WHERE id = ?", id);notify(); },
   async markActive(id: string) { const db = await database(); await db.runAsync("UPDATE active_activity_sessions SET status = 'active', updated_at = ? WHERE id = ?", Date.now(), id);notify(); },
   async markNativeTrackingStarted(id: string, timestamp: number) { const db = await database(); await db.runAsync('UPDATE active_activity_sessions SET native_tracking_started_at = ?, updated_at = ? WHERE id = ?', timestamp, timestamp, id); },
-  async remove(id: string) { await activityPointRepository.removeAll(id); const db = await database(); await db.runAsync('DELETE FROM active_activity_sessions WHERE id = ?', id);notify(); },
+  async remove(id: string) { const db = await database(); await db.withTransactionAsync(async () => { await db.runAsync('DELETE FROM activity_points WHERE session_id = ?', id); await db.runAsync('DELETE FROM active_activity_sessions WHERE id = ?', id); }); notify(); },
   subscribe(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener);};},
 };
 
