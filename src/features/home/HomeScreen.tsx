@@ -24,6 +24,7 @@ export function HomeScreen() {
   const active = useActiveActivity();
   const activityCta = homeActivityCtaPresentation(active);
   const [now,setNow]=useState(Date.now());
+  const [bottomOverlayHeight,setBottomOverlayHeight]=useState(0);
   useEffect(()=>{if(!active)return;const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[active]);
 
   const handleTerritorySelectionChange = (territory: MapTerritory | null) => {
@@ -42,6 +43,7 @@ export function HomeScreen() {
           activeActivity={active}
           onTerritorySelectionChange={handleTerritorySelectionChange}
           selectedTerritory={selectedTerritory}
+          bottomOverlayHeight={bottomOverlayHeight}
         />
       </MapErrorBoundary>
       <LinearGradient
@@ -59,6 +61,7 @@ export function HomeScreen() {
       {selectedTerritory === null ? (
         <Animated.View
           pointerEvents="box-none"
+          onLayout={({nativeEvent})=>setBottomOverlayHeight(nativeEvent.layout.height)}
           style={[
             styles.actionLayer,
             {

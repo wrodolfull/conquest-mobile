@@ -1,0 +1,5 @@
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { PROFILE_TABS, type ProfileTab } from '@/features/profile/profileTabs';
+import { colors } from '@/theme';
+export function ProfileTabs({selected,onSelect}:{selected:ProfileTab;onSelect:(tab:ProfileTab)=>void}){return <View accessibilityRole="tablist" style={s.tabs}>{PROFILE_TABS.map(tab=><Pressable accessibilityRole="tab" accessibilityState={{selected:selected===tab}} accessibilityLabel={`${tab} profile tab`} key={tab} onPress={()=>onSelect(tab)} style={[s.tab,selected===tab&&s.active]}><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72} style={[s.text,selected===tab&&s.activeText]}>{tab.toUpperCase()}</Text></Pressable>)}</View>}
+const s=StyleSheet.create({tabs:{flexDirection:'row',marginHorizontal:12,borderBottomWidth:1,borderColor:colors.border},tab:{flex:1,minHeight:48,alignItems:'center',justifyContent:'center',paddingHorizontal:2},active:{borderBottomWidth:2,borderColor:colors.lime},text:{color:colors.muted,fontSize:9,fontWeight:'900'},activeText:{color:colors.lime}});
