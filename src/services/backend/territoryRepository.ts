@@ -26,9 +26,13 @@ export const territoryRepository = {
       const { data, error } = await supabase.rpc('get_world_regions', viewport);
       if (error) throw error;
       const rows = parseRows(data);
-      const database = await db();
-      await database.runAsync('INSERT OR REPLACE INTO world_region_cache VALUES(?,?,?,?,?,?,?)', key, viewport.west, viewport.south, viewport.east, viewport.north, JSON.stringify(rows), Date.now());
-      await database.runAsync('DELETE FROM world_region_cache WHERE viewport_key NOT IN (SELECT viewport_key FROM world_region_cache ORDER BY updated_at DESC LIMIT 24)');
+      try {
+        const database = await db();
+        await database.runAsync('INSERT OR REPLACE INTO world_region_cache VALUES(?,?,?,?,?,?,?)', key, viewport.west, viewport.south, viewport.east, viewport.north, JSON.stringify(rows), Date.now());
+        await database.runAsync('DELETE FROM world_region_cache WHERE viewport_key NOT IN (SELECT viewport_key FROM world_region_cache ORDER BY updated_at DESC LIMIT 24)');
+      } catch (cacheError) {
+        if (__DEV__) console.warn('[Territory cache] Server response retained after cache write failure.', { error: String(cacheError) });
+      }
       return { regions: rows.map((row) => mapWorldRegion(row, 'server')), source: 'server' };
     } catch {
       const database = await db();

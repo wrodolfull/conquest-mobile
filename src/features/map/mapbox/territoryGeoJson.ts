@@ -14,9 +14,9 @@ export function territoryGeometry(territory: MapTerritory): TerritoryGeometry {
   return territory.geometryType === 'Polygon' ? { type: 'Polygon', coordinates: polygons[0] ?? [] } : { type: 'MultiPolygon', coordinates: polygons };
 }
 
-export function territoryFeatureCollection(regions: readonly MapTerritory[], selectedRegionId?: string): FeatureCollection<TerritoryGeometry, TerritoryDisplayProperties> {
+export function territoryFeatureCollection(regions: readonly MapTerritory[]): FeatureCollection<TerritoryGeometry, TerritoryDisplayProperties> {
   return { type: 'FeatureCollection', features: regions.map(region => {
-    const visual = territoryVisual(region, region.id === selectedRegionId);
+    const visual = territoryVisual(region);
     return { type: 'Feature', id: region.id, geometry: territoryGeometry(region), properties: { regionId: region.id, ownerUserId: region.ownerUserId, status: region.status, controlPercentage: region.controlPercentage, myInfluencePoints: region.myInfluencePoints, totalInfluencePoints: region.totalInfluencePoints, territoryCount: region.territoryCount, renderFillColor: visual.fillColor, renderFillOpacity: visual.fillOpacity, renderStrokeColor: visual.strokeColor, renderStrokeOpacity: visual.strokeOpacity, renderStrokeWidth: visual.strokeWidth, source: region.source } };
   }) };
 }
