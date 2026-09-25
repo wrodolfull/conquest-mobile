@@ -6,6 +6,7 @@ import { parseCachedJson } from '@/services/storage/cacheJson';
 const KEY = 'conquest.exploration-summary.v1';
 let latest: ExplorationSummary | null | undefined;
 const listeners = new Set<(value: ExplorationSummary | null) => void>();
+let inFlight: Promise<ExplorationSummary | null> | undefined;
 
 async function fetchSummary(): Promise<ExplorationSummary | null> {
   try {
@@ -26,10 +27,12 @@ async function fetchSummary(): Promise<ExplorationSummary | null> {
 
 export const explorationRepository = {
   getLatest: () => latest,
-  async refresh() {
-    latest = await fetchSummary();
-    listeners.forEach(listener => listener(latest ?? null));
-    return latest;
+  refresh() {
+    if (inFlight) return inFlight;
+    const request = fetchSummary().then((value) => { latest = value; listeners.forEach(listener => listener(value)); return value; });
+    inFlight = request;
+    void request.finally(() => { if (inFlight === request) inFlight = undefined; }).catch(() => undefined);
+    return request;
   },
   subscribe(listener: (value: ExplorationSummary | null) => void) {
     listeners.add(listener);

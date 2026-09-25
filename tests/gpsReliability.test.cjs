@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createTrackingState, processPoint, routeDistanceMeters, splitRouteAtGaps } = require('../.test-dist/features/activity/tracking.js');
+const { createTrackingRuntime, createTrackingState, processPoint, processRuntimePoint, routeDistanceMeters, splitRouteAtGaps } = require('../.test-dist/features/activity/tracking.js');
 const { calculateTraversals, rewardsForDistance } = require('../.test-dist/features/activity/outdoorRules.js');
 
 const origin = { latitude: -22.9698, longitude: -46.9974 };
@@ -105,4 +105,42 @@ test('duplicate startup fix cannot add distance', () => {
   state = processPoint(state, point(2, 5_000, 30)).state;
   assert.equal(routeDistanceMeters(state.accepted), before);
   assert.equal(state.rejected.at(-1).timestamp, 5_000);
+});
+
+test('incremental runtime is equivalent to full replay across acquisition, drift, spike, confirmation and gap', () => {
+  const sequence = [
+    point(0, 1_000, 70), point(0, 3_000), point(1, 5_000), point(2, 7_000),
+    point(3, 9_000, 12), // stationary drift
+    point(100, 25_000), point(4, 27_000), // isolated spike and return
+    point(55, 35_000), point(72, 39_000), // confirmed candidate
+    point(500, 70_000), point(510, 73_000), // gap then connected movement
+  ];
+  let full = createTrackingState('running');
+  let runtime = createTrackingRuntime('running');
+  const incrementalAccepted = [];
+  const incrementalRejected = [];
+  for (const sample of sequence) {
+    full = processPoint(full, sample).state;
+    const result = processRuntimePoint(runtime, sample); runtime = result.runtime;
+    for (const { point: decided, decision } of result.decisions) {
+      if (decision.accepted) incrementalAccepted.push(decision.reason === 'gps-gap' ? { ...decided, breakBefore: true } : decided);
+      else if (!decision.provisional) incrementalRejected.push(decided);
+    }
+  }
+  assert.equal(runtime.engine.phase, full.phase);
+  assert.deepEqual(incrementalAccepted, full.accepted);
+  assert.deepEqual(incrementalRejected, full.rejected);
+  assert.equal(runtime.distanceMeters, routeDistanceMeters(full.accepted));
+  assert.ok(full.accepted.some((sample) => sample.breakBefore));
+});
+
+test('runtime rebuilt from a stored prefix resumes identically to uninterrupted processing', () => {
+  const sequence = [point(0, 1_000), point(1, 3_000), point(2, 5_000), point(12, 8_000), point(25, 11_000), point(500, 40_000), point(510, 43_000)];
+  const run = (parts) => { let runtime = createTrackingRuntime('running'); for (const part of parts) for (const sample of part) runtime = processRuntimePoint(runtime, sample).runtime; return runtime; };
+  const uninterrupted = run([sequence]);
+  const recoveredPrefix = run([sequence.slice(0, 4)]);
+  let resumed = recoveredPrefix;
+  for (const sample of sequence.slice(4)) resumed = processRuntimePoint(resumed, sample).runtime;
+  assert.deepEqual(resumed, uninterrupted);
+  assert.equal(resumed.distanceMeters, routeDistanceMeters(sequence.reduce((state, sample) => processPoint(state, sample).state, createTrackingState('running')).accepted));
 });

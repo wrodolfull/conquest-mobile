@@ -10,6 +10,8 @@ import { supabasePoiProvider } from './supabasePoiProvider';
 import { distanceMeters } from './poiRules';
 import type { GamePoi, PoiPresence, PoiType } from './types';
 
+export const samePoiPresences = (a: readonly PoiPresence[], b: readonly PoiPresence[]) => a.length === b.length && a.every((value, index) => { const other = b[index]; return other !== undefined && value.poi === other.poi && value.status === other.status && value.distanceMeters === other.distanceMeters && value.exitPendingSince === other.exitPendingSince; });
+
 type Simulation = Partial<Record<PoiType, 'inside' | 'outside'>>;
 interface PoiContextValue {
   location?: ActivityPoint;
@@ -84,14 +86,14 @@ export function PoiProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!location || !pois.length) return;
-    const update = () => setPresences((previous) => pois.map((poi) => {
+    const update = () => setPresences((previous) => { const nextPresences = pois.map((poi) => {
       const existing = previous.find((item) => item.poi.id === poi.id) ?? { poi, status: 'outside' as const, distanceMeters: distanceMeters(location, poi) };
       const override = __DEV__ ? simulation[poi.type] : undefined;
       const distance = override === 'inside' ? 0 : override === 'outside' ? poi.exitRadiusMeters + 100 : distanceMeters(location, poi);
       const usable = location.accuracy === undefined || location.accuracy <= POI_LOCATION_MAXIMUM_ACCURACY_METERS;
       const next = usable ? updateGeofence(existing, distance, poi, Date.now()) : existing;
       return { poi, distanceMeters: distance, ...next };
-    }));
+    }); return samePoiPresences(previous, nextPresences) ? previous : nextPresences; });
     update();
     const timer = setInterval(update, 1_000);
     return () => clearInterval(timer);

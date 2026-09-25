@@ -52,7 +52,16 @@ export interface TrackingEngineState {
 
 export interface ProcessResult { state: TrackingEngineState; decisions: { point: ActivityPoint; decision: PointDecision }[] }
 
+/** Compact, recoverable state used by the live ingestion path. Point history stays in SQLite. */
+export interface TrackingRuntimeState {
+  engine: TrackingEngineState;
+  distanceMeters: number;
+  acceptedPointCount: number;
+  rawPointCount: number;
+}
+
 export const createTrackingState = (type: OutdoorActivityType): TrackingEngineState => ({ type, phase: 'acquiring', accepted: [], rejected: [], startup: [], recentAccuracies: [] });
+export const createTrackingRuntime = (type: OutdoorActivityType): TrackingRuntimeState => ({ engine: createTrackingState(type), distanceMeters: 0, acceptedPointCount: 0, rawPointCount: 0 });
 
 /** A route needs an anchor and a second accepted fix before it can be completed. */
 export function activityGpsState(state: Pick<TrackingEngineState, 'phase' | 'accepted'>): ActivityGpsState {
@@ -162,6 +171,49 @@ export function processPoint(current: TrackingEngineState, point: ActivityPoint)
   const suspicious = distance >= GPS_FILTER.suspiciousSegmentMeters[state.type] || acceleration > GPS_FILTER.maximumAccelerationMetersPerSecondSquared[state.type];
   if (suspicious) { state.candidate = point; decisions.push({ point, decision: { accepted: false, provisional: true, reason: 'provisional' } }); return { state, decisions }; }
   state.previousSpeed = speed; state.accepted.push(point); decisions.push({ point, decision }); return { state, decisions };
+}
+
+/**
+ * Processes one fix while retaining only the rolling algorithm state. This is
+ * deliberately built on processPoint so its decisions cannot drift from the
+ * historical replay implementation.
+ */
+export function processRuntimePoint(current: TrackingRuntimeState, point: ActivityPoint): { runtime: TrackingRuntimeState; decisions: ProcessResult['decisions'] } {
+  const result = processPoint(current.engine, point);
+  let previous = current.engine.accepted.at(-1);
+  let distanceMeters = current.distanceMeters;
+  let acceptedPointCount = current.acceptedPointCount;
+  for (const item of result.decisions) {
+    if (!item.decision.accepted) continue;
+    const accepted = item.decision.reason === 'gps-gap' ? { ...item.point, breakBefore: true } : item.point;
+    if (previous && !accepted.breakBefore) distanceMeters += segmentDistanceMeters(previous, accepted);
+    previous = accepted;
+    acceptedPointCount += 1;
+  }
+  const engine: TrackingEngineState = {
+    ...result.state,
+    // Only the predecessor is consulted by the next decision. Rejected points
+    // are diagnostics, not algorithm input.
+    accepted: previous ? [previous] : [],
+    rejected: [],
+  };
+  return { runtime: { engine, distanceMeters, acceptedPointCount, rawPointCount: current.rawPointCount + 1 }, decisions: result.decisions };
+}
+
+/** Linear-time historical replay used for recovery/finalization. */
+export function replayTrackingPoints(type: OutdoorActivityType, points: readonly ActivityPoint[]): TrackingEngineState {
+  let runtime = createTrackingRuntime(type);
+  const accepted: ActivityPoint[] = [];
+  const rejected: ActivityPoint[] = [];
+  for (const point of points) {
+    const result = processRuntimePoint(runtime, point);
+    runtime = result.runtime;
+    for (const item of result.decisions) {
+      if (item.decision.accepted) accepted.push(item.decision.reason === 'gps-gap' ? { ...item.point, breakBefore: true } : item.point);
+      else if (!item.decision.provisional) rejected.push(item.point);
+    }
+  }
+  return { ...runtime.engine, accepted, rejected };
 }
 
 export function rollingGpsQuality(state: TrackingEngineState): GpsQuality {

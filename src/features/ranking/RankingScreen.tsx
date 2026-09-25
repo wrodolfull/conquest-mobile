@@ -67,6 +67,10 @@ export function RankingScreen() {
     <PlayerHeader />
     <FlatList
       data={entries}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      updateCellsBatchingPeriod={50}
+      windowSize={7}
       keyExtractor={(entry) => entry.userId}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void loadFirstPage(scope, true)} tintColor={colors.lime} />}
       contentContainerStyle={styles.content}
