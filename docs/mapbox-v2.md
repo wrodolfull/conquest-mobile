@@ -1,6 +1,6 @@
 # Map Engine V2 — Mapbox
 
-CONQUEST uses `@rnmapbox/maps` as its sole native game-world renderer. Mapbox needs two different tokens with deliberately separate lifecycles:
+RUQEST uses `@rnmapbox/maps` as its sole native game-world renderer. Mapbox needs two different tokens with deliberately separate lifecycles:
 
 - `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN` is the public runtime token (the `pk…` kind). It is bundled into the client and authorizes map/style requests. `EXPO_PUBLIC_MAPBOX_STYLE_URL` remains optional; the built-in Mapbox dark style is the default.
 - `RNMAPBOX_MAPS_DOWNLOAD_TOKEN` is a secret build-only token (the `sk…` kind) with **DOWNLOADS:READ** scope. The Expo plugin reads it from the build process environment so native Mapbox artifacts can be downloaded. It must never use an `EXPO_PUBLIC_` prefix, enter runtime JavaScript, or be committed.
@@ -26,7 +26,7 @@ Repeat both environment commands with `--environment preview` and `--environment
 
 ## Architecture and privacy
 
-`ConquestBaseMap` owns the base style, attribution/logo, token failure state, and tile-failure-safe surface. Home feeds all authoritative PostGIS Polygon/MultiPolygon regions (including holes) into `conquest-world-regions`, with data-driven fill and edge layers. POIs use a separate point source. The optional atomic grid is a separate line source and exists only when both `__DEV__` and `EXPO_PUBLIC_ENABLE_TERRITORY_GRID_DEBUG=true` hold.
+`RuqestBaseMap` owns the base style, attribution/logo, token failure state, and tile-failure-safe surface. Home feeds all authoritative PostGIS Polygon/MultiPolygon regions (including holes) into `conquest-world-regions`, with data-driven fill and edge layers. POIs use a separate point source. The optional atomic grid is a separate line source and exists only when both `__DEV__` and `EXPO_PUBLIC_ENABLE_TERRITORY_GRID_DEBUG=true` hold.
 
 The public territory source contains only aggregated server world-region geometry and safe display properties. Active and result routes use separate `private-active-route` and `private-result-route` sources made solely from the authenticated player's accepted local GPS points. Routes are split at GPS gaps. Mapbox never provides location authority: `expo-location`, GPS V2 filtering, background tasks, and SQLite remain unchanged.
 
@@ -44,4 +44,4 @@ Camera-idle events drive the existing debounced viewport RPC. Oversized viewport
 
 ## JavaScript bundling dependency
 
-`@rnmapbox/maps` imports `debounce` from its JavaScript `MapView` implementation and imports `@turf/helpers`, `@turf/distance`, `@turf/along`, `@turf/length`, and `@turf/nearest-point-on-line` from its geometry utilities. CONQUEST declares these runtime modules directly rather than depending on them being hoisted transitively. After pulling this change, run `npm install` and restart Metro with a cleared cache before bundling or rebuilding the development client.
+`@rnmapbox/maps` imports `debounce` from its JavaScript `MapView` implementation and imports `@turf/helpers`, `@turf/distance`, `@turf/along`, `@turf/length`, and `@turf/nearest-point-on-line` from its geometry utilities. RUQEST declares these runtime modules directly rather than depending on them being hoisted transitively. After pulling this change, run `npm install` and restart Metro with a cleared cache before bundling or rebuilding the development client.

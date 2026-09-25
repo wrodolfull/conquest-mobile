@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CONQUEST",
+    "name": "RUQEST",
     "slug": "conquest",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -11,8 +11,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow CONQUEST to use precise location to map your outdoor fitness route, territories and nearby game locations.",
-          "locationAlwaysAndWhenInUsePermission": "Allow CONQUEST to record an active outdoor workout when the app is in the background or your screen is locked.",
+          "locationWhenInUsePermission": "Allow RUQEST to use precise location to map your outdoor fitness route, territories and nearby game locations.",
+          "locationAlwaysAndWhenInUsePermission": "Allow RUQEST to record an active outdoor activity while the app is in the background or your screen is locked.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,
           "isIosBackgroundLocationEnabled": true
@@ -25,8 +25,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow CONQUEST to use precise location to map your outdoor fitness route, territories and nearby game locations.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow CONQUEST to record an active outdoor workout when the app is in the background or your screen is locked.",
+        "NSLocationWhenInUseUsageDescription": "Allow RUQEST to use precise location to map your outdoor fitness route, territories and nearby game locations.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow RUQEST to record an active outdoor activity while the app is in the background or your screen is locked.",
         "UIBackgroundModes": [
           "location"
         ]
@@ -48,6 +48,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#07100E"
       },
+      "versionCode": 1,
       "package": "com.wrodolfull.conquest"
     },
     "extra": {
