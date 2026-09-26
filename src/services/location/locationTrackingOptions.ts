@@ -13,5 +13,5 @@ export const LOCATION_OPTIONS: Location.LocationTaskOptions = {
   pausesUpdatesAutomatically: false,
   activityType: Location.ActivityType.Fitness,
   showsBackgroundLocationIndicator: true,
-  foregroundService: { notificationTitle: 'RUQEST activity in progress', notificationBody: 'Tracking your route and territory progress.', killServiceOnDestroy: false },
+  foregroundService: { notificationTitle: 'RUQEST activity in progress', notificationBody: 'Your route is still being recorded.', killServiceOnDestroy: false },
 };

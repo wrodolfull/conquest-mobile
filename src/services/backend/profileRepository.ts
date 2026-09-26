@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { ActivityPreference, PlayerProfile, PlayerProgress, ProfilePrivacy, PublicPlayerProfile } from '@/features/auth/types';
+import { avatarObjectPath, newAvatarPath, validateAvatarAsset } from '@/features/profile/avatarRules';
 
 const profileFields = 'id,username,display_name,avatar_url,bio,preferred_activities,city,region,onboarding_completed';
 export interface ProfileDraft { username:string; displayName:string; avatarUrl:string|null; bio:string; preferredActivities:ActivityPreference[]; city:string; region:string }
@@ -20,4 +21,17 @@ export const progressRepository = {
     const { data, error } = await supabase.from('player_progress').select('user_id,level,xp,energy,coins').eq('user_id', userId).maybeSingle();
     if (error) throw error; return data as PlayerProgress | null;
   },
+};
+
+export const avatarRepository = {
+  async replace(userId:string, oldUrl:string|null, asset:{uri:string;mimeType?:string|null;fileSize?:number|null}):Promise<string>{
+    const mimeType=validateAvatarAsset(asset);const path=newAvatarPath(userId,mimeType);const response=await fetch(asset.uri);const bytes=await response.arrayBuffer();
+    if(bytes.byteLength>5*1024*1024)throw new Error('Choose an image smaller than 5 MB.');
+    const{error}=await supabase.storage.from('avatars').upload(path,bytes,{contentType:mimeType,upsert:false});if(error)throw new Error('Photo upload failed. Try again.');
+    const url=supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+    try{const current=await profileRepository.get(userId);if(!current)throw new Error('Profile unavailable.');await profileRepository.update({username:current.username,displayName:current.display_name,avatarUrl:url,bio:current.bio??'',preferredActivities:current.preferred_activities,city:current.city??'',region:current.region??''});}
+    catch(error){await supabase.storage.from('avatars').remove([path]);throw error;}
+    const previous=avatarObjectPath(oldUrl,userId);if(previous)await supabase.storage.from('avatars').remove([previous]);return url;
+  },
+  async remove(userId:string,oldUrl:string|null):Promise<void>{const current=await profileRepository.get(userId);if(!current)throw new Error('Profile unavailable.');await profileRepository.update({username:current.username,displayName:current.display_name,avatarUrl:null,bio:current.bio??'',preferredActivities:current.preferred_activities,city:current.city??'',region:current.region??''});const path=avatarObjectPath(oldUrl,userId);if(path)await supabase.storage.from('avatars').remove([path]);},
 };

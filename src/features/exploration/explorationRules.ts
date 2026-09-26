@@ -1,6 +1,6 @@
 export const WEEKLY_OBJECTIVES = [
   { key: 'explorer', title: 'Explorer', unit: 'zones', target: 3, coins: 25 },
-  { key: 'influence', title: 'Influence', unit: 'influence', target: 25, coins: 25 },
+  { key: 'influence', title: 'Influence', unit: 'influence', target: 50, coins: 25 },
   { key: 'distance', title: 'Distance', unit: 'meters', target: 5_000, coins: 50 },
 ] as const;
 
