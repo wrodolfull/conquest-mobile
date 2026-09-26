@@ -1,4 +1,4 @@
-export const TERRITORY_RADIUS_METERS=190; export const INFLUENCE_METERS_PER_POINT=100; const EARTH_RADIUS_METERS=6_378_137; const MAX_POINTS=20_000; const MAX_DURATION_MS=24*60*60*1000; const SPEED_LIMIT={walking:12,running:18,cycling:45} as const;
+export const TERRITORY_RADIUS_METERS=190; export const INFLUENCE_METERS_PER_POINT=50; const EARTH_RADIUS_METERS=6_378_137; const MAX_POINTS=20_000; const MAX_DURATION_MS=24*60*60*1000; const SPEED_LIMIT={walking:12,running:18,cycling:45} as const;
 export type OutdoorType=keyof typeof SPEED_LIMIT; export interface RoutePoint{latitude:number;longitude:number;timestamp:string;accuracy?:number;breakBefore?:boolean} export interface SubmitActivity{clientActivityId:string;type:OutdoorType;startedAt:string;endedAt:string;acceptedRoutePoints:RoutePoint[]}
 const rad=(v:number)=>v*Math.PI/180; const deg=(v:number)=>v*180/Math.PI;
 export function distanceMeters(a:RoutePoint,b:RoutePoint){const dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);const x=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;return 6_371_000*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}

@@ -1,7 +1,7 @@
 import type { ActivityPoint, OutdoorActivityType } from './tracking';
 import { territoryAt as findTerritory } from '../territories/territoryGrid';
 
-export const INFLUENCE_METERS_PER_POINT = 100;
+export const INFLUENCE_METERS_PER_POINT = 50;
 export const DISTANCE_MILESTONES = [
   { distanceKm: 1, rarity: 'Common' }, { distanceKm: 2, rarity: 'Uncommon' },
   { distanceKm: 3, rarity: 'Rare' }, { distanceKm: 5, rarity: 'Epic' },

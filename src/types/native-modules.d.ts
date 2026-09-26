@@ -44,3 +44,8 @@ declare module 'react-native-view-shot' {
   import type { View } from 'react-native';
   export function captureRef(ref: RefObject<View | null>, options?: { format?: 'png' | 'jpg'; quality?: number; result?: 'tmpfile' | 'base64' | 'data-uri' }): Promise<string>;
 }
+declare module 'expo-image-picker' {
+  export interface ImagePickerAsset { uri:string; mimeType?:string|null; fileSize?:number|null }
+  export function requestMediaLibraryPermissionsAsync():Promise<{granted:boolean}>;
+  export function launchImageLibraryAsync(options:{mediaTypes:['images'];allowsEditing:boolean;aspect:[number,number];quality:number}):Promise<{canceled:true;assets?:never}|{canceled:false;assets:ImagePickerAsset[]}>;
+}

@@ -37,6 +37,7 @@ interface Props { activeActivity?: ActiveActivitySession; selectedTerritory: Map
 export function ConquestMap({ activeActivity, selectedTerritory, onTerritorySelectionChange, bottomOverlayHeight = 0 }: Props) {
   const { user } = useAuth();
   const camera = useRef<Mapbox.Camera>(null);
+  const hasInitiallyCentered = useRef(false);
   const latestViewport = useRef<WorldViewport | null>(null);
   const latestZoom = useRef(15);
   const loadedViewport = useRef<WorldViewport | null>(null);
@@ -112,7 +113,17 @@ export function ConquestMap({ activeActivity, selectedTerritory, onTerritorySele
     return () => { mounted = false; unsubscribe(); };
   }, [activeActivity]);
   useEffect(() => { if (locationDenied) setMessage('Location is required to discover territories and Arenas.'); }, [locationDenied]);
-  useEffect(() => { if (locationReady && location) camera.current?.setCamera({ centerCoordinate: [location.longitude, location.latitude], zoomLevel: 15, animationDuration: 350 }); }, [location, locationReady]);
+  useEffect(() => {
+    if (!hasInitiallyCentered.current && locationReady && location) {
+      hasInitiallyCentered.current = true;
+      camera.current?.setCamera({ centerCoordinate: [location.longitude, location.latitude], zoomLevel: 15, animationDuration: 350 });
+    }
+  }, [location, locationReady]);
+  useEffect(() => {
+    if (!selectedTerritory) return;
+    const refreshed = regions.find(region => region.id === selectedTerritory.id);
+    if (refreshed && refreshed !== selectedTerritory) onTerritorySelectionChange(refreshed);
+  }, [onTerritorySelectionChange, regions, selectedTerritory]);
   useEffect(() => {
     if (!territoryDetail && detailWasEnabled.current) disableTerritoryDetail();
     detailWasEnabled.current = territoryDetail;
