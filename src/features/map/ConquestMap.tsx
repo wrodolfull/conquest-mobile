@@ -113,13 +113,12 @@ export function ConquestMap({ activeActivity, selectedTerritory, onTerritorySele
     const unsubscribe = activeActivityRepository.subscribe(refresh);
     return () => { mounted = false; unsubscribe(); };
   }, [activeActivity]);
-  useEffect(() => { if (locationDenied) setMessage('Location is required to discover territories and Arenas.'); }, [locationDenied]);
   useEffect(() => {
-    if (!hasInitiallyCentered.current && locationReady && location) {
+    if (!hasInitiallyCentered.current && locationReady && location && !locationDenied) {
       hasInitiallyCentered.current = true;
       camera.current?.setCamera({ centerCoordinate: [location.longitude, location.latitude], zoomLevel: 15, animationDuration: 350 });
     }
-  }, [location, locationReady]);
+  }, [location, locationDenied, locationReady]);
   useEffect(() => {
     if (!selectedTerritory) return;
     const refreshed = regions.find(region => region.id === selectedTerritory.id);

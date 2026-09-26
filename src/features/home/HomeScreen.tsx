@@ -20,7 +20,7 @@ import { useTarget } from '@/features/targets/useTarget';
 export function HomeScreen() {
   const [selectedTerritory, setSelectedTerritory] = useState<MapTerritory | null>(null);
   const controlsEntrance = useRef(new Animated.Value(1)).current;
-  const { notice, dismissNotice, simulate } = usePois();
+  const { notice, dismissNotice, simulate, locationDenied, locationCanAskAgain, locationPermissionChecked, requestForegroundLocation, openLocationSettings } = usePois();
   const showPoiDebug = __DEV__ && process.env.EXPO_PUBLIC_ENABLE_POI_DEBUG === 'true';
   const active = useActiveActivity();const{target}=useTarget();
   const activityCta = homeActivityCtaPresentation(active);
@@ -58,6 +58,7 @@ export function HomeScreen() {
         <View style={styles.arena}><ArenaCard /></View>
       </View>
       {notice ? <Pressable onPress={dismissNotice} style={styles.poiNotice}><Ionicons name="location" size={18} color={colors.lime} /><Text style={styles.poiNoticeText}>{notice}</Text><Ionicons name="close" size={16} color={colors.muted} /></Pressable> : null}
+      {locationPermissionChecked&&locationDenied?<View accessibilityRole="alert" style={styles.permission}><Ionicons name="location-outline" size={28} color={colors.cyan}/><Text style={styles.permissionTitle}>{locationCanAskAgain?'LOCATION POWERS THE MAP':'LOCATION PERMISSION DISABLED'}</Text><Text style={styles.permissionCopy}>{locationCanAskAgain?'Ruqest uses your location to show your position, discover territories and find nearby Arenas.\n\nYour exact activity routes remain private.':'Enable location for Ruqest in your device settings.'}</Text><Pressable accessibilityRole="button" onPress={()=>void(locationCanAskAgain?requestForegroundLocation():openLocationSettings())} style={styles.permissionButton}><Text style={styles.permissionButtonText}>{locationCanAskAgain?'ENABLE LOCATION / TRY AGAIN':'OPEN SETTINGS'}</Text></Pressable></View>:null}
       {showPoiDebug ? <View style={styles.dev}><Text style={styles.devTitle}>DEV POI</Text>{(['arena', 'training_ground'] as const).map((type) => <View key={type} style={styles.devRow}><Text style={styles.devLabel}>{type === 'arena' ? 'Arena' : 'Park'}</Text><Pressable onPress={() => simulate(type, 'inside')}><Text style={styles.devAction}>ENTER</Text></Pressable><Pressable onPress={() => simulate(type, 'outside')}><Text style={styles.devAction}>LEAVE</Text></Pressable></View>)}</View> : null}
       {selectedTerritory === null ? (
         <Animated.View
@@ -96,6 +97,7 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({targetHud:{padding:10,borderRadius:14,backgroundColor:colors.mapOverlay,borderWidth:1,borderColor:colors.cyan},targetLabel:{color:colors.cyan,fontSize:8,fontWeight:'900'},targetName:{color:colors.text,fontWeight:'900',marginTop:2},
+  permission:{position:'absolute',left:20,right:20,top:'30%',zIndex:20,padding:22,borderRadius:20,alignItems:'center',backgroundColor:'#10221FF8',borderWidth:1,borderColor:colors.cyan},permissionTitle:{color:colors.text,fontSize:17,fontWeight:'900',marginTop:10,textAlign:'center'},permissionCopy:{color:colors.muted,fontSize:11,lineHeight:17,textAlign:'center',marginTop:9},permissionButton:{marginTop:18,minHeight:48,alignSelf:'stretch',alignItems:'center',justifyContent:'center',borderRadius:14,backgroundColor:colors.lime},permissionButtonText:{color:colors.background,fontSize:11,fontWeight:'900'},
   screen: { flex: 1, overflow: 'hidden', backgroundColor: colors.background },
   topShade: { position: 'absolute', top: 0, left: 0, right: 0, height: 190 },
   hudLayer: { position: 'absolute', top: 0, left: 0, right: 0 },
