@@ -1,9 +1,8 @@
 import * as Location from 'expo-location';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Linking } from 'react-native';
 import { assessPoint, type ActivityPoint } from '@/features/activity/tracking';
 import { LOCATION_OPTIONS, fromLocation } from '@/services/location/locationTrackingOptions';
-import { FALLBACK_LOCATION } from '@/services/location/locationService';
 import { POI_LOCATION_MAXIMUM_ACCURACY_METERS } from './config';
 import { isGeofenceActive, updateGeofence } from './geofenceEngine';
 import { supabasePoiProvider } from './supabasePoiProvider';
@@ -19,6 +18,10 @@ interface PoiContextValue {
   presences: PoiPresence[];
   locationReady: boolean;
   locationDenied: boolean;
+  locationCanAskAgain: boolean;
+  locationPermissionChecked: boolean;
+  requestForegroundLocation(): Promise<void>;
+  openLocationSettings(): Promise<void>;
   notice?: string;
   dismissNotice(): void;
   activePoi(type: PoiType): GamePoi | undefined;
@@ -33,6 +36,8 @@ export function PoiProvider({ children }: { children: ReactNode }) {
   const [presences, setPresences] = useState<PoiPresence[]>([]);
   const [locationReady, setLocationReady] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [locationCanAskAgain, setLocationCanAskAgain] = useState(true);
+  const [locationPermissionChecked, setLocationPermissionChecked] = useState(false);
   const [notice, setNotice] = useState<string>();
   const [simulation, setSimulation] = useState<Simulation>({});
   const [permissionRevision, setPermissionRevision] = useState(0);
@@ -47,13 +52,15 @@ export function PoiProvider({ children }: { children: ReactNode }) {
     let subscription: Location.LocationSubscription | undefined;
     void (async () => {
       setLocationReady(false);
-      // Permission requests happen only after the outdoor start screen explains
-      // their purpose. Home observes already-granted access without prompting.
+      // Home checks permission without prompting; its explainer CTA owns the
+      // foreground request. Background access remains outdoor-start-only.
       const permission = await Location.getForegroundPermissionsAsync();
       if (!mounted) return;
+      setLocationCanAskAgain(permission.canAskAgain);
+      setLocationPermissionChecked(true);
       if (!permission.granted) {
         setLocationDenied(true); setLocationReady(true);
-        const now = Date.now(); setLocation({ ...FALLBACK_LOCATION, timestamp: now });
+        reliableLocation.current=undefined;setLocation(undefined);setPois([]);setPresences([]);
         return;
       }
       setLocationDenied(false);
@@ -112,11 +119,13 @@ export function PoiProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(undefined), 4_500); return () => clearTimeout(timer); }, [notice]);
 
   const value = useMemo<PoiContextValue>(() => ({
-    location, pois, presences, locationReady, locationDenied, notice,
+    location, pois, presences, locationReady, locationDenied, locationCanAskAgain, locationPermissionChecked, notice,
+    requestForegroundLocation: async()=>{const permission=await Location.requestForegroundPermissionsAsync();setLocationCanAskAgain(permission.canAskAgain);setLocationPermissionChecked(true);setLocationDenied(!permission.granted);if(permission.granted)setPermissionRevision(value=>value+1);},
+    openLocationSettings: async()=>{await Linking.openSettings();},
     dismissNotice: () => setNotice(undefined),
     activePoi: (type) => presences.find((item) => item.poi.type === type && isGeofenceActive(item.status))?.poi,
     simulate: (type, state) => { if (__DEV__) setSimulation((current) => ({ ...current, [type]: state })); },
-  }), [location, pois, presences, locationReady, locationDenied, notice]);
+  }), [location, pois, presences, locationReady, locationDenied, locationCanAskAgain, locationPermissionChecked, notice]);
   return <PoiContext.Provider value={value}>{children}</PoiContext.Provider>;
 }
 
