@@ -5,7 +5,7 @@ import Mapbox from '@rnmapbox/maps';
 import { ConquestBaseMap } from '@/features/map/mapbox/ConquestBaseMap';
 import { pointFeatureCollection, routeBounds, routeFeatureCollection } from '@/features/map/mapbox/routeGeoJson';
 import { ActivityFlowShell } from '@/components/ActivityFlowShell';
-import type { CompletedOutdoorActivity } from '@/features/activity/outdoorRules';
+import type { CompletedOutdoorActivity, TerritoryTraversal } from '@/features/activity/outdoorRules';
 import { formatDuration, isActivityType } from '@/features/activity/activityRules';
 import { activityRepository, type StoredOutdoorActivity } from '@/services/storage/activityRepository';
 import { colors } from '@/theme';
@@ -16,9 +16,93 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth/AuthContext';
 import { activitySyncService } from '@/services/backend/activitySyncService';
 import { ShareActivityPreview } from '@/components/activity/ShareActivityPreview';
-import { createActivityShareModel } from '@/features/activity/shareModel';
+import { createActivityShareModel, type ShareableActivity } from '@/features/activity/shareModel';
 import { serverActivityRepository } from '@/services/backend/serverActivityRepository';
 import { displayRoutePoints, type ActivityDetail } from '@/features/activity/activityHistory';
+import type { ActivityPoint } from '@/features/activity/tracking';
+import type { CompletedObjective, ZoneDiscovery } from '@/features/exploration/explorationRules';
+import type { ActivitySyncStatus } from '@/services/storage/activityRepository';
+
+interface ActivityResultPresentation {
+  type: CompletedOutdoorActivity['type'];
+  distanceMeters: number;
+  estimatedDistanceMeters: number;
+  durationSeconds: number;
+  xpEarned: number;
+  energyEarned: number;
+  influenceEarned: number;
+  route: ActivityPoint[];
+  impacts: TerritoryTraversal[];
+  loot: AuthoritativeLootGrant[];
+  discoveries: ZoneDiscovery[];
+  objectives: CompletedObjective[];
+  syncStatus: ActivitySyncStatus;
+  lastSyncError?: string;
+  lastSyncErrorCode?: string;
+  target?: { territoryName?: string; reached: boolean };
+  specialZones?: CompletedOutdoorActivity['specialZones'];
+  shareActivity: ShareableActivity;
+}
+
+function isServerActivityDetail(value: StoredOutdoorActivity | ActivityDetail): value is ActivityDetail {
+  return 'source' in value && value.source === 'server';
+}
+
+function presentActivityResult(result: StoredOutdoorActivity | ActivityDetail): ActivityResultPresentation {
+  if (isServerActivityDetail(result)) {
+    return {
+      type: result.type,
+      distanceMeters: result.distanceMeters,
+      estimatedDistanceMeters: result.distanceMeters,
+      durationSeconds: result.durationSeconds,
+      xpEarned: result.xpEarned,
+      energyEarned: result.energyEarned,
+      influenceEarned: result.influenceEarned,
+      route: displayRoutePoints(result.route),
+      impacts: result.territoryImpacts,
+      loot: result.loot,
+      discoveries: result.newZonesDiscovered,
+      objectives: result.completedObjectives,
+      syncStatus: 'synced',
+      shareActivity: {
+        type: result.type,
+        syncStatus: 'synced',
+        distanceMeters: result.distanceMeters,
+        durationSeconds: result.durationSeconds,
+        xpEarned: result.xpEarned,
+        energyEarned: result.energyEarned,
+        influenceEarned: result.influenceEarned,
+        endedAt: result.endedAt,
+        traversals: result.territoryImpacts,
+        authoritativeTerritoryImpacts: result.territoryImpacts,
+        authoritativeLoot: result.loot,
+      },
+    };
+  }
+
+  return {
+    type: result.type,
+    distanceMeters: result.authoritativeDistanceMeters ?? result.distanceMeters,
+    estimatedDistanceMeters: result.distanceMeters,
+    durationSeconds: result.durationSeconds,
+    xpEarned: result.authoritativeXpEarned ?? result.xpEarned,
+    energyEarned: result.authoritativeEnergyEarned ?? result.energyEarned,
+    influenceEarned: result.authoritativeInfluenceEarned ?? result.influenceEarned,
+    route: result.route,
+    impacts: result.authoritativeTerritoryImpacts ?? result.traversals,
+    loot: result.authoritativeLoot ?? [],
+    discoveries: result.newZonesDiscovered ?? [],
+    objectives: result.completedObjectives ?? [],
+    syncStatus: result.syncStatus,
+    lastSyncError: result.lastSyncError,
+    lastSyncErrorCode: result.lastSyncErrorCode,
+    target: result.targetTerritoryId
+      ? { territoryName: result.targetTerritoryName, reached: result.targetReached === true }
+      : undefined,
+    specialZones: result.specialZones,
+    shareActivity: result,
+  };
+}
 
 export default function ActivityResultsScreen() {
   const {user}=useAuth();
@@ -29,20 +113,21 @@ export default function ActivityResultsScreen() {
   useEffect(() => { const load=async()=>{if(!params.activityId||!user)return;const local=await activityRepository.find(params.activityId,user.id);if(local){setResult(local);return;}setResult(await serverActivityRepository.getDetail(params.serverActivityId??params.activityId));};void load();return activityRepository.subscribe(()=>void load()); }, [params.activityId,params.serverActivityId,user]);
   if (type === 'indoor') return <IndoorResult activityId={params.activityId} />;
   if (!result) return <ActivityFlowShell eyebrow="ACTIVITY COMPLETE" title="Loading result"><Text style={styles.empty}>Securing route…</Text></ActivityFlowShell>;
-  const server='source' in result&&result.source==='server';const route=server?displayRoutePoints(result.route):result.route;const start=route[0];
-  const impacts=server?result.territoryImpacts:result.authoritativeTerritoryImpacts??result.traversals;
-  const insufficientGps=!server&&result.lastSyncErrorCode==='INSUFFICIENT_GPS_DATA';const distance=server?result.distanceMeters:result.authoritativeDistanceMeters??result.distanceMeters;const xp=server?result.xpEarned:result.authoritativeXpEarned??result.xpEarned;const energy=server?result.energyEarned:result.authoritativeEnergyEarned??result.energyEarned;const influence=server?result.influenceEarned:result.authoritativeInfluenceEarned??result.influenceEarned;const loot=server?result.loot:result.authoritativeLoot;const discoveries=result.newZonesDiscovered;const objectives=result.completedObjectives;
-  return <ActivityFlowShell eyebrow="ACTIVITY COMPLETE" title={type[0]!.toUpperCase() + type.slice(1)} canGoBack={false}>
-    <View style={styles.completeMark}><Ionicons name="checkmark" size={20} color={colors.background}/></View><View style={styles.primary}><Text style={styles.label}>DISTANCE</Text><Text adjustsFontSizeToFit numberOfLines={1} style={styles.value}>{(distance / 1000).toFixed(2)}<Text style={styles.unit}> KM</Text></Text><View style={styles.durationPill}><Text style={styles.durationValue}>{formatDuration(result.durationSeconds)}</Text><Text style={styles.durationLabel}>DURATION</Text></View></View>
-    <View style={styles.stats}><Stat label="XP" value={`+${xp}`} /><Stat label="ENERGY" value={`+${energy}`} /><Stat label="TERRITORIES" value={`${impacts.length}`} /><Stat label="INFLUENCE" value={`+${influence}`} /></View>{!server&&result.targetTerritoryId?<View style={styles.targetResult}><Text style={styles.targetResultLabel}>{result.targetReached?'TARGET REACHED':'TARGET NOT REACHED'}</Text><Text style={styles.rowTitle}>{result.targetTerritoryName}</Text>{!result.targetReached?<Text style={styles.explanation}>NORMAL ACTIVITY PROGRESS WAS KEPT</Text>:null}</View>:null}
-    {discoveries?.length ? <View style={styles.frontier}><Text style={styles.frontierLabel}>NEW FRONTIER</Text><Text style={styles.frontierValue}>{discoveries.length} new {discoveries.length===1?'zone':'zones'} discovered</Text>{discoveries.length<=3?<Text style={styles.frontierNames}>{discoveries.map(zone=>zone.territoryName).join(' · ')}</Text>:null}</View> : null}
+  const presentation = presentActivityResult(result);
+  const { route, impacts, loot, discoveries: newZonesDiscovered, objectives } = presentation;
+  const start = route[0];
+  const insufficientGps = presentation.lastSyncErrorCode === 'INSUFFICIENT_GPS_DATA';
+  return <ActivityFlowShell eyebrow="ACTIVITY COMPLETE" title={presentation.type[0]!.toUpperCase() + presentation.type.slice(1)} canGoBack={false}>
+    <View style={styles.completeMark}><Ionicons name="checkmark" size={20} color={colors.background}/></View><View style={styles.primary}><Text style={styles.label}>DISTANCE</Text><Text adjustsFontSizeToFit numberOfLines={1} style={styles.value}>{(presentation.distanceMeters / 1000).toFixed(2)}<Text style={styles.unit}> KM</Text></Text><View style={styles.durationPill}><Text style={styles.durationValue}>{formatDuration(presentation.durationSeconds)}</Text><Text style={styles.durationLabel}>DURATION</Text></View></View>
+    <View style={styles.stats}><Stat label="XP" value={`+${presentation.xpEarned}`} /><Stat label="ENERGY" value={`+${presentation.energyEarned}`} /><Stat label="TERRITORIES" value={`${impacts.length}`} /><Stat label="INFLUENCE" value={`+${presentation.influenceEarned}`} /></View>{presentation.target?<View style={styles.targetResult}><Text style={styles.targetResultLabel}>{presentation.target.reached?'TARGET REACHED':'TARGET NOT REACHED'}</Text><Text style={styles.rowTitle}>{presentation.target.territoryName}</Text>{!presentation.target.reached?<Text style={styles.explanation}>NORMAL ACTIVITY PROGRESS WAS KEPT</Text>:null}</View>:null}
+    {newZonesDiscovered?.length ? <View style={styles.frontier}><Text style={styles.frontierLabel}>NEW FRONTIER</Text><Text style={styles.frontierValue}>{newZonesDiscovered.length} new {newZonesDiscovered.length===1?'zone':'zones'} discovered</Text>{newZonesDiscovered.length<=3?<Text style={styles.frontierNames}>{newZonesDiscovered.map(zone=>zone.territoryName).join(' · ')}</Text>:null}</View> : null}
     {objectives?.map(objective=><View key={objective.key} style={styles.objective}><Text style={styles.objectiveLabel}>OBJECTIVE COMPLETE</Text><Text style={styles.rowTitle}>{objective.title}</Text><Text style={styles.coin}>+{objective.coins} Coins</Text></View>)}
-    <View style={[styles.syncChip,!server&&result.syncStatus==='failed'&&!insufficientGps&&styles.syncChipFailed]}><Text style={[styles.syncState,!server&&result.syncStatus==='failed'&&!insufficientGps&&styles.failed]}>{server||result.syncStatus==='synced'?'SERVER CONFIRMED':result.syncStatus==='syncing'?'SYNCING WITH SERVER':insufficientGps?'NOT ENOUGH GPS DATA':result.syncStatus==='failed'?'SYNC FAILED':'PENDING SYNC · ESTIMATED'}</Text></View>{!server&&result.syncStatus==='pending'?<Text style={styles.explanation}>Saved safely on this device. Territory influence becomes official after server confirmation.</Text>:null}{!server&&result.syncStatus==='failed'?<><Text style={styles.explanation}>{result.lastSyncError??'Your activity is safe on this device.'}</Text>{!insufficientGps?<Pressable onPress={()=>user&&void activitySyncService.syncPending(user.id,true)}><Text style={styles.retry}>RETRY SYNC</Text></Pressable>:null}</>:null}<View style={styles.sectionHeading}><Text style={styles.heading}>PRIVATE ROUTE</Text><Text style={styles.privateLabel}>YOUR ROUTE</Text></View><View style={styles.map}>{start ? <RouteMap route={route} /> : <Text style={styles.empty}>No accepted GPS points were recorded.</Text>}</View>
+    <View style={[styles.syncChip,presentation.syncStatus==='failed'&&!insufficientGps&&styles.syncChipFailed]}><Text style={[styles.syncState,presentation.syncStatus==='failed'&&!insufficientGps&&styles.failed]}>{presentation.syncStatus==='synced'?'SERVER CONFIRMED':presentation.syncStatus==='syncing'?'SYNCING WITH SERVER':insufficientGps?'NOT ENOUGH GPS DATA':presentation.syncStatus==='failed'?'SYNC FAILED':'PENDING SYNC · ESTIMATED'}</Text></View>{presentation.syncStatus==='pending'?<Text style={styles.explanation}>Saved safely on this device. Territory influence becomes official after server confirmation.</Text>:null}{presentation.syncStatus==='failed'?<><Text style={styles.explanation}>{presentation.lastSyncError??'Your activity is safe on this device.'}</Text>{!insufficientGps?<Pressable onPress={()=>user&&void activitySyncService.syncPending(user.id,true)}><Text style={styles.retry}>RETRY SYNC</Text></Pressable>:null}</>:null}<View style={styles.sectionHeading}><Text style={styles.heading}>PRIVATE ROUTE</Text><Text style={styles.privateLabel}>YOUR ROUTE</Text></View><View style={styles.map}>{start ? <RouteMap route={route} /> : <Text style={styles.empty}>No accepted GPS points were recorded.</Text>}</View>
     <Text style={styles.heading}>YOUR MOVEMENT CHANGED THE WORLD</Text><View style={styles.panel}>{impacts.length ? impacts.map((item) => <View key={item.territoryId} style={styles.row}><View style={styles.grow}><Text style={styles.rowTitle}>{item.territoryName}</Text><Text style={styles.muted}>{(item.distanceMeters / 1000).toFixed(2)} km in this territory</Text></View><Text style={styles.influence}>+{item.influenceEarned} influence</Text></View>) : <Text style={styles.empty}>Move between two accepted points to generate impact.</Text>}</View>
-    {server||result.syncStatus==='synced' ? <><Text style={styles.heading}>LOOT EARNED</Text><View style={styles.lootList}>{loot?.length ? loot.map(grant=><LootCard grant={grant} key={grant.milestoneMeters}/>) : <Text style={styles.empty}>No distance loot earned this activity.</Text>}</View></> : <><Text style={styles.heading}>DISTANCE MILESTONES</Text><View style={styles.panel}>{pendingMilestones(result.distanceMeters).length ? pendingMilestones(result.distanceMeters).map((item) => {const visual=rarityVisuals[item.rarity];return <View key={item.milestoneMeters} style={styles.row}><View style={[styles.rewardDot,{backgroundColor:visual.color}]}/><Text style={styles.growText}>{item.milestoneMeters/1000} KM · {visual.label}</Text><Text style={styles.pending}>REWARD PENDING SYNC</Text></View>}) : <Text style={styles.empty}>Reach 1 km to unlock the first distance milestone.</Text>}</View></>}
-    {!server&&result.specialZones.length ? <><Text style={styles.heading}>SPECIAL ZONES</Text><View style={styles.panel}>{result.specialZones.map((zone) => <View key={zone.poiId} style={styles.zone}><Text style={styles.rowTitle}>{zone.poiName}</Text><Text style={styles.muted}>Distance inside: {(zone.distanceMeters / 1000).toFixed(2)} km</Text><Text style={styles.earned}>Bonus XP: +{zone.bonusXp}</Text></View>)}</View></> : null}
+    {presentation.syncStatus==='synced' ? <><Text style={styles.heading}>LOOT EARNED</Text><View style={styles.lootList}>{loot.length ? loot.map(grant=><LootCard grant={grant} key={grant.milestoneMeters}/>) : <Text style={styles.empty}>No distance loot earned this activity.</Text>}</View></> : <><Text style={styles.heading}>DISTANCE MILESTONES</Text><View style={styles.panel}>{pendingMilestones(presentation.estimatedDistanceMeters).length ? pendingMilestones(presentation.estimatedDistanceMeters).map((item) => {const visual=rarityVisuals[item.rarity];return <View key={item.milestoneMeters} style={styles.row}><View style={[styles.rewardDot,{backgroundColor:visual.color}]}/><Text style={styles.growText}>{item.milestoneMeters/1000} KM · {visual.label}</Text><Text style={styles.pending}>REWARD PENDING SYNC</Text></View>}) : <Text style={styles.empty}>Reach 1 km to unlock the first distance milestone.</Text>}</View></>}
+    {presentation.specialZones?.length ? <><Text style={styles.heading}>SPECIAL ZONES</Text><View style={styles.panel}>{presentation.specialZones.map((zone) => <View key={zone.poiId} style={styles.zone}><Text style={styles.rowTitle}>{zone.poiName}</Text><Text style={styles.muted}>Distance inside: {(zone.distanceMeters / 1000).toFixed(2)} km</Text><Text style={styles.earned}>Bonus XP: +{zone.bonusXp}</Text></View>)}</View></> : null}
     <View style={styles.actions}><Pressable accessibilityRole="button" accessibilityLabel="Share activity" onPress={() => setShareVisible(true)} style={styles.share}><Ionicons name="share-outline" size={17} color={colors.lime} /><Text style={styles.shareText}>SHARE ACTIVITY</Text></Pressable><Pressable onPress={() => router.replace('/map')} style={styles.done}><Text style={styles.doneText}>Back to home</Text></Pressable></View>
-    <ShareActivityPreview model={createActivityShareModel(server?{type:result.type,syncStatus:'synced',distanceMeters:result.distanceMeters,durationSeconds:result.durationSeconds,xpEarned:result.xpEarned,energyEarned:result.energyEarned,influenceEarned:result.influenceEarned,endedAt:result.endedAt,traversals:result.territoryImpacts,authoritativeTerritoryImpacts:result.territoryImpacts,authoritativeLoot:result.loot}:result)} visible={shareVisible} onClose={() => setShareVisible(false)} />
+    <ShareActivityPreview model={createActivityShareModel(presentation.shareActivity)} visible={shareVisible} onClose={() => setShareVisible(false)} />
   </ActivityFlowShell>;
 }
 function RouteMap({ route }: { route: CompletedOutdoorActivity['route'] }) {
