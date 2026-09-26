@@ -15,13 +15,14 @@ import { useActiveActivity } from '@/features/activity/useActiveActivity';
 import { formatDuration } from '@/features/activity/activityRules';
 import { activeActivityDestination, homeActivityCtaPresentation } from '@/features/activity/activityPresentation';
 import { potentialInfluenceForDistance } from './activeActivityMapFeedback';
+import { useTarget } from '@/features/targets/useTarget';
 
 export function HomeScreen() {
   const [selectedTerritory, setSelectedTerritory] = useState<MapTerritory | null>(null);
   const controlsEntrance = useRef(new Animated.Value(1)).current;
   const { notice, dismissNotice, simulate } = usePois();
   const showPoiDebug = __DEV__ && process.env.EXPO_PUBLIC_ENABLE_POI_DEBUG === 'true';
-  const active = useActiveActivity();
+  const active = useActiveActivity();const{target}=useTarget();
   const activityCta = homeActivityCtaPresentation(active);
   const [now,setNow]=useState(Date.now());
   const [bottomOverlayHeight,setBottomOverlayHeight]=useState(0);
@@ -70,6 +71,7 @@ export function HomeScreen() {
             },
           ]}
         >
+          {target?<View style={styles.targetHud}><Text style={styles.targetLabel}>TARGET</Text><Text style={styles.targetName}>{target.territoryName}</Text></View>:null}
           <Pressable
             accessibilityLabel={activityCta.accessibilityLabel}
             accessibilityRole="button"
@@ -93,7 +95,7 @@ export function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create({targetHud:{padding:10,borderRadius:14,backgroundColor:colors.mapOverlay,borderWidth:1,borderColor:colors.cyan},targetLabel:{color:colors.cyan,fontSize:8,fontWeight:'900'},targetName:{color:colors.text,fontWeight:'900',marginTop:2},
   screen: { flex: 1, overflow: 'hidden', backgroundColor: colors.background },
   topShade: { position: 'absolute', top: 0, left: 0, right: 0, height: 190 },
   hudLayer: { position: 'absolute', top: 0, left: 0, right: 0 },

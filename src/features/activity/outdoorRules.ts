@@ -13,6 +13,7 @@ export interface CompletedOutdoorActivity {
   id: string; type: OutdoorActivityType; startedAt: number; endedAt: number; durationSeconds: number;
   distanceMeters: number; route: ActivityPoint[]; traversals: TerritoryTraversal[]; influenceEarned: number;
   unlockedRewards: string[]; energyEarned: number; xpEarned: number;
+  targetTerritoryId?: string; targetTerritoryName?: string; targetReached?: boolean;
   specialZones: { poiId: string; poiName: string; distanceMeters: number; bonusXp: number }[];
 }
 

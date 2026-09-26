@@ -31,11 +31,12 @@ import {
   viewportFromMapState,
 } from './mapPerformance';
 import { viewportKey } from '../territories/worldRegions';
+import { useTarget } from '@/features/targets/useTarget';
 
 interface Props { activeActivity?: ActiveActivitySession; selectedTerritory: MapTerritory | null; onTerritorySelectionChange: (territory: MapTerritory | null) => void; bottomOverlayHeight?: number }
 
 export function ConquestMap({ activeActivity, selectedTerritory, onTerritorySelectionChange, bottomOverlayHeight = 0 }: Props) {
-  const { user } = useAuth();
+  const { user } = useAuth();const {target}=useTarget();
   const camera = useRef<Mapbox.Camera>(null);
   const hasInitiallyCentered = useRef(false);
   const latestViewport = useRef<WorldViewport | null>(null);
@@ -55,7 +56,7 @@ export function ConquestMap({ activeActivity, selectedTerritory, onTerritorySele
   const debugGrid = territoryGridDebugEnabled(__DEV__, process.env.EXPO_PUBLIC_ENABLE_TERRITORY_GRID_DEBUG);
   const atomicCells = useMemo(() => debugGrid ? territoryCandidatesForLocation(location, locationDenied) : [], [debugGrid, location, locationDenied]);
   const territories = useMemo(() => territoryFeatureCollection(regions), [regions]);
-  const selectedFilter = useMemo(() => selectedTerritoryFilter(selectedTerritory?.id ?? ''), [selectedTerritory]);
+  const selectedFilter = useMemo(() => selectedTerritoryFilter(selectedTerritory?.id ?? ''), [selectedTerritory]);const targetFilter=useMemo(()=>selectedTerritoryFilter(target?.territoryId??''),[target?.territoryId]);
   const privateRoute = useMemo(() => routeFeatureCollection(activeRoute), [activeRoute]);
   const provisionalTerritories = useMemo(() => provisionalTerritoryFeatureCollection(activeRoute), [activeRoute]);
   const grid = useMemo(() => ({ type: 'FeatureCollection' as const, features: atomicCells.map(cell => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: [...cell.boundary, cell.boundary[0]!].map(p => [p.longitude, p.latitude]) } })) }), [atomicCells]);
@@ -139,7 +140,7 @@ export function ConquestMap({ activeActivity, selectedTerritory, onTerritorySele
 
   return <View style={styles.container}><ConquestBaseMap onCameraChanged={updateCameraState} onMapIdle={state => { updateCameraState(state); void requestViewport(latestViewport.current, state.properties.zoom); }} onPress={() => { clear(); setSelectedPoiId(null); }}>
     <Mapbox.Camera ref={camera} defaultSettings={{ centerCoordinate: [coordinate.longitude, coordinate.latitude], zoomLevel: 15 }}/>
-    {!usingFallback && regions.length ? <Mapbox.ShapeSource id="conquest-world-regions" shape={territories} onPress={event => { const territory = resolveTerritoryTap(regions, event.features[0]?.properties?.regionId); if (territory) { setSelectedPoiId(null); onTerritorySelectionChange(territory); } }}><Mapbox.FillLayer id="conquest-territory-fills" minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{ fillColor: ['get', 'renderFillColor'], fillOpacity: ['get', 'renderFillOpacity'] }}/><Mapbox.LineLayer id="conquest-territory-edges" minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{ lineColor: ['get', 'renderStrokeColor'], lineOpacity: ['get', 'renderStrokeOpacity'], lineWidth: ['get', 'renderStrokeWidth'] }}/><Mapbox.FillLayer id="conquest-selected-territory-fill" filter={selectedFilter} minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{ fillColor: ['get', 'renderFillColor'], fillOpacity: 0.23 }}/><Mapbox.LineLayer id="conquest-selected-territory-edge" filter={selectedFilter} minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{ lineColor: ['get', 'renderStrokeColor'], lineOpacity: 0.9, lineWidth: 2.4 }}/></Mapbox.ShapeSource> : null}
+    {!usingFallback && regions.length ? <Mapbox.ShapeSource id="conquest-world-regions" shape={territories} onPress={event => { const territory = resolveTerritoryTap(regions, event.features[0]?.properties?.regionId); if (territory) { setSelectedPoiId(null); onTerritorySelectionChange(territory); } }}><Mapbox.FillLayer id="conquest-territory-fills" minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{ fillColor: ['get', 'renderFillColor'], fillOpacity: ['get', 'renderFillOpacity'] }}/><Mapbox.LineLayer id="conquest-territory-edges" minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{ lineColor: ['get', 'renderStrokeColor'], lineOpacity: ['get', 'renderStrokeOpacity'], lineWidth: ['get', 'renderStrokeWidth'] }}/><Mapbox.FillLayer id="conquest-selected-territory-fill" filter={selectedFilter} minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{ fillColor: ['get', 'renderFillColor'], fillOpacity: 0.23 }}/><Mapbox.LineLayer id="conquest-selected-territory-edge" filter={selectedFilter} minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{ lineColor: ['get', 'renderStrokeColor'], lineOpacity: 0.9, lineWidth: 2.4 }}/><Mapbox.LineLayer id="conquest-target-territory-edge" filter={targetFilter} minZoomLevel={TERRITORY_DETAIL_MIN_ZOOM} style={{lineColor:colors.cyan,lineOpacity:1,lineWidth:3}}/></Mapbox.ShapeSource> : null}
     {activeActivity && activeRoute.length ? <Mapbox.ShapeSource id="private-home-provisional-territory" shape={provisionalTerritories}><Mapbox.FillLayer id="private-home-provisional-territory-fill" style={{ fillColor: '#B7FF5A', fillOpacity: 0.22, fillOutlineColor: '#B7FF5A55' }}/><Mapbox.LineLayer id="private-home-provisional-territory-glow" style={{ lineColor: '#B7FF5A', lineOpacity: 0.25, lineBlur: 5, lineWidth: 8 }}/></Mapbox.ShapeSource> : null}
     {activeActivity && activeRoute.length ? <Mapbox.ShapeSource id="private-home-active-route" shape={privateRoute}><Mapbox.LineLayer id="private-home-active-route-line" style={{ lineColor: colors.cyan, lineWidth: 3.5, lineCap: 'round', lineJoin: 'round', lineOpacity: 0.92 }}/></Mapbox.ShapeSource> : null}
     {debugGrid ? <Mapbox.ShapeSource id="conquest-dev-atomic-grid" shape={grid}><Mapbox.LineLayer id="conquest-dev-atomic-grid-lines" style={{ lineColor: '#FF4FD8A0', lineWidth: 1 }}/></Mapbox.ShapeSource> : null}
