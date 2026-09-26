@@ -1,4 +1,4 @@
-interface ShareableActivity {
+export interface ShareableActivity {
   type: 'walking' | 'running' | 'cycling';
   syncStatus: 'pending' | 'syncing' | 'synced' | 'failed';
   distanceMeters: number; durationSeconds: number; xpEarned: number; energyEarned: number; influenceEarned: number; endedAt: number;
