@@ -1,4 +1,3 @@
-/* eslint-disable import/no-unresolved -- Expo/native packages resolve in the development build. */
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';

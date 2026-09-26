@@ -1,5 +1,13 @@
-import type { MapState } from '@rnmapbox/maps';
 import type { WorldViewport } from '../territories/types';
+
+interface MapViewportState {
+  properties: {
+    bounds: {
+      ne: readonly number[];
+      sw: readonly number[];
+    };
+  };
+}
 
 export const TERRITORY_DETAIL_MIN_ZOOM = 14;
 export const TERRITORY_VIEWPORT_PADDING_RATIO = 0.2;
@@ -22,7 +30,7 @@ export function isValidWorldViewport(viewport: WorldViewport): boolean {
     && north - south <= WORLD_VIEWPORT_MAX_DEGREES;
 }
 
-export function viewportFromMapState(state: MapState): WorldViewport | null {
+export function viewportFromMapState(state: MapViewportState): WorldViewport | null {
   const { ne, sw } = state.properties.bounds;
   if (ne.length < 2 || sw.length < 2) return null;
   const viewport = { west: sw[0]!, south: sw[1]!, east: ne[0]!, north: ne[1]! };

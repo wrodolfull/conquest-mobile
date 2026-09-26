@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-// eslint-disable-next-line import/no-unresolved -- installed by Expo in native builds.
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { ProfileForm } from '@/components/profile/ProfileForm';

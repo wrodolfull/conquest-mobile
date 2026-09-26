@@ -1,4 +1,3 @@
-/* eslint-disable import/no-unresolved -- Expo/native packages resolve in the development build. */
 import * as SQLite from 'expo-sqlite';
 import type { CompletedOutdoorActivity } from '@/features/activity/outdoorRules';
 import type { CompletedIndoorActivity } from '@/features/activity/indoorRules';

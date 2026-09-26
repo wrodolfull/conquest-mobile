@@ -1,4 +1,4 @@
-import type { ActivityResult, ActivityType, DistanceMilestone } from '@/types/game';
+import type { ActivityType, DistanceMilestone } from '@/types/game';
 
 export const distanceMilestones: DistanceMilestone[] = [
   { distance: 1, rarity: 'Common' },
