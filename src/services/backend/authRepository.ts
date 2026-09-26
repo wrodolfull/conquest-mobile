@@ -1,4 +1,3 @@
-/* eslint-disable import/no-unresolved -- Expo/native packages resolve in the development build. */
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';

@@ -1,6 +1,5 @@
 import * as Location from 'expo-location';
 // Installed by the development-build profile; Expo Go does not provide this native module.
-// eslint-disable-next-line import/no-unresolved
 import * as TaskManager from 'expo-task-manager';
 import { ingestNativeLocations } from './locationIngestion';
 

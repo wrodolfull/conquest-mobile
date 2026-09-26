@@ -1,5 +1,4 @@
 // Durable native storage is available in the development build, not Expo Go.
-// eslint-disable-next-line import/no-unresolved
 import * as SQLite from "expo-sqlite";
 import {
   createTrackingRuntime,

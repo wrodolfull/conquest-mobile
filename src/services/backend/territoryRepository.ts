@@ -1,4 +1,3 @@
-/* eslint-disable import/no-unresolved -- Expo/native packages resolve in the development build. */
 import * as SQLite from 'expo-sqlite';
 import { supabase } from '@/lib/supabase';
 import { isWorldRegionRow, mapWorldRegion, viewportKey, type WorldRegionRow } from '@/features/territories/worldRegions';

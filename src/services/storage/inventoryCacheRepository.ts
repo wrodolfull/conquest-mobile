@@ -1,4 +1,3 @@
-/* eslint-disable import/no-unresolved -- Expo SQLite resolves in the development build. */
 import * as SQLite from 'expo-sqlite';
 import type { InventoryItem } from '@/features/inventory/lootRules';
 import { parseCachedJson } from './cacheJson';

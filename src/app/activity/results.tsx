@@ -7,7 +7,7 @@ import { pointFeatureCollection, routeBounds, routeFeatureCollection } from '@/f
 import { ActivityFlowShell } from '@/components/ActivityFlowShell';
 import type { CompletedOutdoorActivity, TerritoryTraversal } from '@/features/activity/outdoorRules';
 import { formatDuration, isActivityType } from '@/features/activity/activityRules';
-import { activityRepository, type StoredOutdoorActivity } from '@/services/storage/activityRepository';
+import { activityRepository, type ActivitySyncStatus, type StoredOutdoorActivity } from '@/services/storage/activityRepository';
 import { colors } from '@/theme';
 import type { CompletedIndoorActivity } from '@/features/activity/indoorRules';
 import { pendingMilestones, type AuthoritativeLootGrant } from '@/features/inventory/lootRules';
@@ -21,7 +21,6 @@ import { serverActivityRepository } from '@/services/backend/serverActivityRepos
 import { displayRoutePoints, type ActivityDetail } from '@/features/activity/activityHistory';
 import type { ActivityPoint } from '@/features/activity/tracking';
 import type { CompletedObjective, ZoneDiscovery } from '@/features/exploration/explorationRules';
-import type { ActivitySyncStatus } from '@/services/storage/activityRepository';
 
 interface ActivityResultPresentation {
   type: CompletedOutdoorActivity['type'];
