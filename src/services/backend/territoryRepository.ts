@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { isWorldRegionRow, mapWorldRegion, viewportKey, type WorldRegionRow } from '@/features/territories/worldRegions';
 import type { MapTerritory, WorldViewport } from '@/features/territories/types';
 import { parseCachedJson } from '@/services/storage/cacheJson';
+import { domainRepository } from '@/features/domains/domainRepository';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | undefined;
 const listeners = new Set<() => void>();
@@ -19,7 +20,7 @@ const parseRows = (payload: unknown): WorldRegionRow[] => Array.isArray(payload)
 export interface WorldRegionsResult { regions: MapTerritory[]; source: 'server' | 'cache' }
 
 export const territoryRepository = {
-  invalidate() { listeners.forEach((listener) => listener()); },
+  invalidate() { domainRepository.invalidate(); listeners.forEach((listener) => listener()); },
   subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
   async getWorldRegionsWithMetadata(viewport: WorldViewport): Promise<WorldRegionsResult> {
     const key = viewportKey(viewport);

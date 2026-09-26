@@ -1,0 +1,6 @@
+const test=require('node:test'),assert=require('node:assert/strict'),{axialNeighbors,buildDomainSummary,domainImpact,isSoleLeader}=require('../.test-dist/features/domains/domainRules.js');const c=(territoryId,q,r)=>({territoryId,name:territoryId,q,r});
+test('true axial neighbors include negative coordinates',()=>assert.deepEqual(axialNeighbors(-2,-3),[{q:-1,r:-3},{q:-3,r:-3},{q:-2,r:-2},{q:-2,r:-4},{q:-1,r:-4},{q:-3,r:-2}]));
+test('single, adjacent, and separated components',()=>{assert.equal(buildDomainSummary([c('a',0,0)]).largestDomainSize,1);assert.deepEqual([buildDomainSummary([c('a',0,0),c('b',1,0),c('c',2,0)]).domainCount,buildDomainSummary([c('a',0,0),c('b',1,0),c('c',2,0)]).largestDomainSize],[1,3]);assert.deepEqual(buildDomainSummary([c('a',0,0),c('b',1,0),c('c',4,0),c('d',5,0)]).domains.map(d=>d.zoneCount),[2,2])});
+test('bridge connects distinct domains',()=>assert.deepEqual(domainImpact(0,0,[c('a',-2,0),c('b',-1,0),c('c',1,0),c('d',2,0)]),{kind:'connect',adjacentDomainCount:2,connectedSizes:[2,2],projectedSize:5}));
+test('same domain on multiple edges counts once',()=>assert.equal(domainImpact(0,0,[c('a',1,0),c('b',0,1),c('c',1,-1)]).adjacentDomainCount,1));
+test('ties are not controlled',()=>{assert.equal(isSoleLeader(10,[8]),true);assert.equal(isSoleLeader(10,[10]),false)});
